@@ -1,6 +1,6 @@
 # Component Rules — MAMUTE
 
-Guia de quando criar, como organizar e como nomear componentes.
+Guia de quando criar, como organizar e como nomear componentes sob a arquitetura do Next.js e Tailwind CSS v3.
 
 ---
 
@@ -8,13 +8,15 @@ Guia de quando criar, como organizar e como nomear componentes.
 
 Antes de criar um novo componente, verifique nesta ordem:
 
-1. **Já existe um shared?** → usar `src/components/shared/`
-2. **É específico de uma feature?** → criar em `src/components/<feature>/`
-3. **É usado em 3+ lugares diferentes?** → promover para `shared/`
+1. **Já existe um shared?** → Usar do diretório `src/components/shared/`
+2. **É específico de uma feature?** → Criar no diretório `src/components/<feature>/`
+3. **É usado em 3 ou mais lugares diferentes?** → Promover para `src/components/shared/`
 
 ---
 
 ## Componentes shared existentes
+
+Todos os componentes compartilhados usam Tailwind CSS e aceitam propriedades extras (`...props` e `className`).
 
 ### Button
 ```jsx
@@ -31,9 +33,8 @@ import { Button } from '../shared/Button';
 ```jsx
 import { Card } from '../shared/Card';
 
-<Card>Conteúdo</Card>
-<Card onClick={() => navigate('/alunos/'+id)}>Card clicável</Card>
-<Card style={{ padding: 24 }}>Com style customizado</Card>
+<Card>Conteúdo do Card</Card>
+<Card onClick={() => router.push('/alunos/' + id)}>Card clicável</Card>
 ```
 
 ### Modal
@@ -43,8 +44,7 @@ import { Modal } from '../shared/Modal';
 <Modal open={showModal} onClose={() => setShowModal(false)} title="Título" width={560}>
   Conteúdo do modal
 </Modal>
-// Fecha com ESC automaticamente
-// Fecha ao clicar fora automaticamente
+// Bloqueia rolagem do body, fecha com ESC e cliques externos automaticamente
 ```
 
 ### Input / Textarea / Select
@@ -72,8 +72,8 @@ if (loading) return <Loading text="Carregando alunos..." />;
 ```jsx
 import { DisciplineBadge, AlertBadge } from '../shared/Badge';
 
-<DisciplineBadge discipline="piano" size="sm" />   // sm | md
-<AlertBadge type="danger" />   // danger | warning | success
+<DisciplineBadge discipline="piano" size="sm" />   // size: 'sm' | 'md'
+<AlertBadge type="danger" />   // type: 'danger' | 'warning' | 'success'
 ```
 
 ---
@@ -82,29 +82,36 @@ import { DisciplineBadge, AlertBadge } from '../shared/Badge';
 
 ```jsx
 // src/components/students/StudentDetail.jsx
+'use client';
 
 // 1. Imports externos
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 
 // 2. Imports internos (hooks → lib → outros componentes → shared)
-import { useStudent } from '../../hooks/useStudents';
-import { classes as classesApi } from '../../lib/api';
+import { useStudent } from '@/hooks/useStudents';
+import { classes as classesApi } from '@/lib/api';
 import { RegisterClassModal } from './RegisterClassModal';
 import { Button } from '../shared/Button';
+import { Loading } from '../shared/Loading';
 
 // 3. Componentes auxiliares locais (se pequenos)
 function StatCard({ value, label }) {
-  return <div>...</div>;
+  return (
+    <div className="bg-surface-2 p-3 rounded-lg border border-border">
+      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xs text-text-3">{label}</div>
+    </div>
+  );
 }
 
 // 4. Componente principal — export nomeado
 export function StudentDetail() {
-  // 4a. Hooks de roteamento
+  // 4a. Hooks de roteamento do Next.js
   const { id } = useParams();
-  const navigate = useNavigate();
+  const router = useRouter();
 
-  // 4b. Hooks customizados (dados)
+  // 4b. Hooks customizados (dados de cliente)
   const { data: student, loading, refetch } = useStudent(id);
 
   // 4c. Estado local (UI only)
@@ -116,10 +123,15 @@ export function StudentDetail() {
 
   // 4e. Early returns
   if (loading) return <Loading />;
-  if (!student) return <EmptyState title="Aluno não encontrado" />;
+  if (!student) return <div className="text-text-3 text-sm">Aluno não encontrado.</div>;
 
-  // 4f. Render
-  return ( ... );
+  // 4f. Render usando Tailwind CSS
+  return (
+    <div className="w-full flex flex-col gap-4">
+      <h1 className="text-2xl font-bold">{student.name}</h1>
+      {/* ... */}
+    </div>
+  );
 }
 ```
 
@@ -127,60 +139,61 @@ export function StudentDetail() {
 
 ## Modais
 
-Modais são sempre componentes separados no mesmo diretório da feature:
-
+Modais são sempre criados como componentes separados no mesmo diretório da feature:
 ```
 students/
   StudentDetail.jsx      → página
-  RegisterClassModal.jsx → modal chamado pela página
-  AddStudentModal.jsx    → modal chamado pela lista
+  RegisterClassModal.jsx → modal de registro chamado pela página
+  AddStudentModal.jsx    → modal de cadastro chamado pela lista
 ```
 
-Estado do modal (`open`) é controlado pelo pai:
+O controle de visibilidade (`open`) e o callback de sucesso ficam sob o controle do componente pai:
 ```jsx
-// No pai
+// No pai (StudentDetail)
 const [showAdd, setShowAdd] = useState(false);
+
 <Button onClick={() => setShowAdd(true)}>+ Novo</Button>
-<AddStudentModal open={showAdd} onClose={() => setShowAdd(false)} onSuccess={handleSuccess} />
+<AddStudentModal open={showAdd} onClose={() => setShowAdd(false)} onSuccess={refetch} />
 ```
 
----
-
-## Padrão de callback onSuccess
-
+No modal (filho):
 ```jsx
-// Modal recebe onSuccess para notificar o pai após operação
 export function AddStudentModal({ open, onClose, onSuccess }) {
   const handleSubmit = async () => {
     await studentsApi.create(data);
     onClose();
-    onSuccess(); // pai pode refetch, navegar, etc.
+    onSuccess(); // Notifica o pai para atualizar
   };
 }
 ```
 
 ---
 
-## Tabs
+## Navegação por Abas (Tabs)
 
-Padrão de tabs usado no StudentDetail:
+Padrão de tabs utilizando Tailwind CSS e estado reativo local:
 ```jsx
 const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy'];
 const [tab, setTab] = useState('Hoje');
 
 // Render das tabs
-<div style={{ display:'flex', borderBottom:'1px solid var(--border)' }}>
+<div className="flex border-b border-border mb-5 overflow-x-auto select-none">
   {TABS.map(t => (
-    <button key={t} onClick={() => setTab(t)} style={{
-      padding: '10px 18px',
-      fontWeight: tab === t ? 600 : 400,
-      borderBottom: tab === t ? '2px solid var(--text)' : '2px solid transparent',
-      // ...
-    }}>{t}</button>
+    <button
+      key={t}
+      onClick={() => setTab(t)}
+      className={`px-4.5 py-2.5 bg-transparent border-b-2 cursor-pointer text-sm transition-all -mb-px outline-none ${
+        tab === t
+          ? 'font-semibold text-text border-text'
+          : 'font-normal text-text-3 border-transparent hover:text-text-2'
+      }`}
+    >
+      {t}
+    </button>
   ))}
 </div>
 
-// Condicional de conteúdo
+// Render condicional
 {tab === 'Hoje' && <TodayTab student={student} />}
-{tab === 'Histórico' && <HistoryTab classes={classHistory} />}
+{tab === 'Histórico' && <HistoryTab studentId={student.id} />}
 ```

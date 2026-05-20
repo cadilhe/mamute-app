@@ -1,13 +1,11 @@
 import { Modal } from '../shared/Modal';
 import { Button } from '../shared/Button';
-import { DISCIPLINES } from '../../lib/constants';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function ReportModal({ open, onClose, student, classHistory }) {
   if (!student) return null;
   const lastClass = classHistory?.[0];
-  const pendencies = classHistory?.filter(c => c.pending?.trim()) || [];
 
   const handlePrint = () => {
     const win = window.open('', '_blank');
@@ -33,15 +31,15 @@ export function ReportModal({ open, onClose, student, classHistory }) {
 
   return (
     <Modal open={open} onClose={onClose} title={"Relatório — " + student.name} width={640}>
-      <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="flex flex-col gap-5">
         {/* Info */}
-        <div style={{ display:'flex', gap:12 }}>
-          <div style={{ width:56, height:56, borderRadius:'50%', background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:22 }}>
+        <div className="flex gap-3 items-center">
+          <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center font-bold text-2xl text-text select-none shrink-0">
             {student.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontWeight:700, fontSize:16 }}>{student.name}</div>
-            <div style={{ color:'var(--text-3)', fontSize:13 }}>
+            <div className="font-bold text-base text-text">{student.name}</div>
+            <div className="text-xs text-text-3 mt-0.5">
               {student.age && `${student.age} anos`}{student.school && ` · ${student.school}`}
             </div>
           </div>
@@ -50,34 +48,40 @@ export function ReportModal({ open, onClose, student, classHistory }) {
         {/* Last class */}
         {lastClass && (
           <div>
-            <div style={{ fontSize:12, fontWeight:600, color:'var(--text-3)', marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>Última Aula</div>
-            <div style={{ background:'var(--surface-2)', borderRadius:10, padding:14 }}>
-              <div style={{ fontSize:12, color:'var(--text-3)', marginBottom:6 }}>
+            <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-2 select-none">
+              Última Aula
+            </div>
+            <div className="bg-surface-2 rounded-xl p-4 border border-border/30">
+              <div className="text-xs text-text-3 mb-1.5 font-medium">
                 {format(new Date(lastClass.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </div>
-              <p style={{ fontSize:14, lineHeight:1.6 }}>{lastClass.content}</p>
-              {lastClass.pending && <p style={{ color:'#F59E0B', fontSize:13, marginTop:8 }}>⚠ {lastClass.pending}</p>}
-              {lastClass.next_step && <p style={{ color:'#10B981', fontSize:13, marginTop:4 }}>→ {lastClass.next_step}</p>}
+              <p className="text-sm leading-relaxed text-text-2">{lastClass.content}</p>
+              {lastClass.pending && <p className="text-xs text-warning mt-2 font-medium">⚠ {lastClass.pending}</p>}
+              {lastClass.next_step && <p className="text-xs text-success mt-1 font-medium">→ {lastClass.next_step}</p>}
             </div>
           </div>
         )}
 
         {/* History summary */}
         <div>
-          <div style={{ fontSize:12, fontWeight:600, color:'var(--text-3)', marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>
+          <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-2 select-none">
             Histórico ({classHistory.length} aulas)
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:200, overflow:'auto' }}>
+          <div className="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto pr-1">
             {classHistory.map(c => (
-              <div key={c.id} style={{ display:'flex', gap:10, alignItems:'center', fontSize:13, padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
-                <span style={{ color:'var(--text-3)', minWidth:80, fontSize:12 }}>{format(new Date(c.date), 'd/MM/yyyy')}</span>
-                <span style={{ color:'var(--text-2)' }}>{c.content?.substring(0,80) || '—'}</span>
+              <div key={c.id} className="flex gap-3 items-center text-xs py-1.5 border-b border-border/50 last:border-0">
+                <span className="text-text-3 font-semibold min-w-[70px] shrink-0">
+                  {format(new Date(c.date), 'd/MM/yyyy')}
+                </span>
+                <span className="text-text-2 truncate flex-1">
+                  {c.content?.substring(0, 80) || '—'}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display:'flex', justifyContent:'flex-end', gap:8, paddingTop:8, borderTop:'1px solid var(--border)' }}>
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-border mt-1">
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
           <Button onClick={handlePrint}>🖨 Imprimir / PDF</Button>
         </div>

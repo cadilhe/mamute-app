@@ -1,61 +1,75 @@
-import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 const NAV = [
-  { to: '/', icon: '⬡', label: 'Dashboard' },
-  { to: '/alunos', icon: '◈', label: 'Alunos' },
-  { to: '/agenda', icon: '◎', label: 'Agenda' },
-  { to: '/visao-geral', icon: '◉', label: 'Visão Geral', alert: true },
+  { href: '/', icon: '⬡', label: 'Dashboard' },
+  { href: '/alunos', icon: '◈', label: 'Alunos' },
+  { href: '/agenda', icon: '◎', label: 'Agenda' },
+  { href: '/visao-geral', icon: '◉', label: 'Visão Geral', alert: true },
 ];
 
 export function Sidebar() {
   const { profile, signOut } = useAuth();
+  const pathname = usePathname();
+
   return (
-    <aside style={{
-      width: 'var(--sidebar-w)', minHeight:'100vh', background:'var(--surface)',
-      borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column',
-      position:'fixed', top:0, left:0, zIndex:100,
-    }}>
+    <aside className="w-[var(--sidebar-w)] min-h-screen bg-surface border-r border-border flex flex-col fixed top-0 left-0 z-50">
       {/* Logo */}
-      <div style={{ padding:'24px 20px 20px', borderBottom:'1px solid var(--border)' }}>
-        <div style={{ fontWeight:700, fontSize:18, letterSpacing:'-0.5px' }}>MAMUTE</div>
-        <div style={{ fontSize:11, color:'var(--text-3)', marginTop:2 }}>Sistema de ensino</div>
+      <div className="p-6 border-b border-border">
+        <div className="font-bold text-lg tracking-tight text-text">MAMUTE</div>
+        <div className="text-xs text-text-3 mt-0.5">Sistema de ensino</div>
       </div>
+
       {/* Nav */}
-      <nav style={{ flex:1, padding:'12px 0' }}>
-        {NAV.map(({ to, icon, label, alert }) => (
-          <NavLink key={to} to={to} end={to==='/'} style={({ isActive }) => ({
-            display:'flex', alignItems:'center', gap:10, padding:'10px 20px',
-            color: isActive ? 'var(--text)' : 'var(--text-2)',
-            background: isActive ? 'var(--surface-2)' : 'transparent',
-            fontWeight: isActive ? 600 : 400, fontSize:14,
-            transition:'all 0.15s', position:'relative',
-          })}>
-            <span style={{ fontSize:16 }}>{icon}</span>
-            {label}
-            {alert && <span style={{ width:6, height:6, borderRadius:'50%', background:'#EF4444', marginLeft:'auto' }} />}
-          </NavLink>
-        ))}
-        <div style={{ height:1, background:'var(--border)', margin:'8px 20px' }} />
-        <NavLink to="/pais" style={({ isActive }) => ({
-          display:'flex', alignItems:'center', gap:10, padding:'10px 20px',
-          color: isActive ? 'var(--text)' : 'var(--text-2)',
-          background: isActive ? 'var(--surface-2)' : 'transparent',
-          fontWeight: isActive ? 600 : 400, fontSize:14, transition:'all 0.15s',
-        })}>
-          <span style={{ fontSize:16 }}>♡</span>
+      <nav className="flex-1 py-4 flex flex-col gap-0.5">
+        {NAV.map(({ href, icon, label, alert }) => {
+          const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all relative ${
+                isActive
+                  ? 'text-text bg-surface-2 font-semibold'
+                  : 'text-text-2 hover:bg-surface-2/40 font-normal'
+              }`}
+            >
+              <span className="text-base">{icon}</span>
+              {label}
+              {alert && (
+                <span className="w-1.5 h-1.5 rounded-full bg-danger ml-auto" />
+              )}
+            </Link>
+          );
+        })}
+        <div className="h-px bg-border my-2 mx-5" />
+        
+        {/* Portal dos Pais */}
+        <Link
+          href="/pais"
+          className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all ${
+            pathname === '/pais'
+              ? 'text-text bg-surface-2 font-semibold'
+              : 'text-text-2 hover:bg-surface-2/40 font-normal'
+          }`}
+        >
+          <span className="text-base">♡</span>
           Portal dos Pais
-        </NavLink>
+        </Link>
       </nav>
+
       {/* User */}
-      <div style={{ padding:16, borderTop:'1px solid var(--border)' }}>
-        <div style={{ fontSize:12, color:'var(--text-3)', marginBottom:4 }}>
+      <div className="p-4 border-t border-border flex flex-col gap-1.5">
+        <div className="text-xs text-text-3 truncate font-medium">
           {profile?.full_name || 'Professor'}
         </div>
-        <button onClick={signOut} style={{
-          fontSize:12, color:'var(--text-3)', background:'none', border:'none',
-          cursor:'pointer', padding:0,
-        }}>
+        <button
+          onClick={signOut}
+          className="text-xs text-text-3 text-left bg-transparent border-none cursor-pointer p-0 hover:text-text-2 transition-colors"
+        >
           Sair →
         </button>
       </div>

@@ -1,20 +1,31 @@
 import { DISCIPLINES } from '../../lib/constants';
-export function DisciplineBadge({ discipline, size = 'sm' }) {
-  const d = DISCIPLINES[discipline] || { label: discipline, color: '#6B7280', bg: '#F9FAFB' };
+
+export function DisciplineBadge({ discipline, size = 'sm', className = '' }) {
+  const d = DISCIPLINES[discipline] || { label: discipline, color: '#6B7280', bg: 'transparent' };
+  
+  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1';
+  
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:4,
-      padding: size==='sm'?'2px 8px':'4px 12px', borderRadius:20,
-      background:d.bg, color:d.color, fontWeight:600,
-      fontSize:size==='sm'?11:13, whiteSpace:'nowrap' }}>
+    <span
+      className={`inline-flex items-center gap-1 font-bold rounded-full select-none border border-current/10 whitespace-nowrap ${sizeClass} ${className}`}
+      style={{ backgroundColor: d.bg, color: d.color }}
+    >
       {d.label}
     </span>
   );
 }
-export function AlertBadge({ type }) {
-  const c = {
-    danger: { label:'Sem aula', bg:'#FEF2F2', color:'#EF4444' },
-    warning: { label:'Pendências', bg:'#FFFBEB', color:'#F59E0B' },
-    success: { label:'Em dia', bg:'#ECFDF5', color:'#10B981' },
-  }[type || 'success'];
-  return <span style={{ padding:'2px 10px', borderRadius:20, background:c.bg, color:c.color, fontWeight:600, fontSize:11 }}>{c.label}</span>;
+
+export function AlertBadge({ type, className = '' }) {
+  const configs = {
+    danger: { label: 'Sem aula', classes: 'bg-danger-bg/40 text-danger border-danger/20' },
+    warning: { label: 'Pendências', classes: 'bg-warning-bg/40 text-warning border-warning/20' },
+    success: { label: 'Em dia', classes: 'bg-success-bg/40 text-success border-success/20' },
+  };
+  const c = configs[type || 'success'] || configs.success;
+  
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full border text-[10px] font-bold select-none ${c.classes} ${className}`}>
+      {c.label}
+    </span>
+  );
 }

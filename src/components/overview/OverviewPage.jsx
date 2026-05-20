@@ -1,14 +1,16 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { overview as overviewApi } from '../../lib/api';
-import { DisciplineBadge, AlertBadge } from '../shared/Badge';
+import { useRouter } from 'next/navigation';
+import { overview as overviewApi } from '@/lib/api';
+import { AlertBadge } from '../shared/Badge';
 import { Loading, EmptyState } from '../shared/Loading';
 
 export function OverviewPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     overviewApi.getAll().then(({ data: d }) => {
@@ -25,29 +27,34 @@ export function OverviewPage() {
 
   const shown = filter === 'danger' ? danger : filter === 'warning' ? warning : filter === 'ok' ? ok : data;
 
+  const filters = [
+    { key: 'all', label: 'Todos', count: data.length, activeColor: 'text-text', activeBg: 'bg-surface-2', activeBorder: 'border-text-2' },
+    { key: 'danger', label: 'Precisam atenção', count: danger.length, activeColor: 'text-danger', activeBg: 'bg-danger-bg/40', activeBorder: 'border-danger' },
+    { key: 'warning', label: 'Com pendências', count: warning.length, activeColor: 'text-warning', activeBg: 'bg-warning-bg/40', activeBorder: 'border-warning' },
+    { key: 'ok', label: 'Em dia', count: ok.length, activeColor: 'text-success', activeBg: 'bg-success-bg/40', activeBorder: 'border-success' },
+  ];
+
   return (
-    <div>
-      <div style={{ marginBottom:24 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.5px' }}>Visão Geral</h1>
-        <p style={{ color:'var(--text-3)', fontSize:13, marginTop:2 }}>Acompanhe todos os alunos com alertas</p>
+    <div className="w-full animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Visão Geral</h1>
+        <p className="text-xs text-text-3 mt-0.5">Acompanhe todos os alunos com alertas</p>
       </div>
 
       {/* Filter cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12, marginBottom:20 }}>
-        {[
-          { key:'all', label:'Todos', count:data.length, color:'var(--text)', bg:'var(--surface-2)' },
-          { key:'danger', label:'Precisam atenção', count:danger.length, color:'#EF4444', bg:'#FEF2F2' },
-          { key:'warning', label:'Com pendências', count:warning.length, color:'#F59E0B', bg:'#FFFBEB' },
-          { key:'ok', label:'Em dia', count:ok.length, color:'#10B981', bg:'#ECFDF5' },
-        ].map(({ key, label, count, color, bg }) => (
-          <div key={key} onClick={()=>setFilter(key)} style={{
-            padding:'16px 20px', borderRadius:12, border:'2px solid',
-            borderColor: filter===key ? color : 'var(--border)',
-            background: filter===key ? bg : 'var(--surface)',
-            cursor:'pointer', transition:'all 0.15s',
-          }}>
-            <div style={{ fontSize:24, fontWeight:700, color }}>{count}</div>
-            <div style={{ fontSize:12, color:'var(--text-3)', marginTop:2 }}>{label}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 select-none">
+        {filters.map(({ key, label, count, activeColor, activeBg, activeBorder }) => (
+          <div
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${
+              filter === key
+                ? `${activeBg} ${activeBorder}`
+                : 'border-border bg-surface hover:border-text-3'
+            }`}
+          >
+            <div className={`text-2xl font-bold ${filter === key ? activeColor : 'text-text-2'}`}>{count}</div>
+            <div className="text-xs text-text-3 mt-1">{label}</div>
           </div>
         ))}
       </div>
@@ -56,20 +63,21 @@ export function OverviewPage() {
       {shown.length === 0 ? (
         <EmptyState icon="✓" title="Nenhum aluno nessa categoria" />
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <div className="flex flex-col gap-2">
           {shown.map(s => {
             const alertType = s.days_since_last_class >= 14 ? 'danger' : s.pending_count >= 2 ? 'warning' : 'success';
             return (
-              <div key={s.id} onClick={()=>navigate('/alunos/'+s.id)}
-                style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:'14px 20px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, transition:'box-shadow 0.15s' }}
-                onMouseEnter={e=>e.currentTarget.style.boxShadow='var(--shadow-md)'}
-                onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
-                <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>
+              <div
+                key={s.id}
+                onClick={() => router.push('/alunos/' + s.id)}
+                className="bg-surface rounded-xl border border-border px-5 py-3.5 cursor-pointer flex items-center gap-3 transition-all hover:shadow-md hover:border-text-3"
+              >
+                <div className="w-9 h-9 rounded-full bg-surface-2 flex items-center justify-center font-bold text-sm text-text-2 shrink-0 select-none">
                   {s.name?.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:600 }}>{s.name}</div>
-                  <div style={{ fontSize:12, color:'var(--text-3)' }}>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-text truncate">{s.name}</div>
+                  <div className="text-xs text-text-3 mt-0.5">
                     {s.days_since_last_class != null
                       ? s.days_since_last_class === 0 ? 'Aula hoje' : `${s.days_since_last_class} dias sem aula`
                       : 'Sem aulas registradas'
@@ -78,7 +86,7 @@ export function OverviewPage() {
                   </div>
                 </div>
                 <AlertBadge type={alertType} />
-                <span style={{ color:'var(--text-3)' }}>›</span>
+                <span className="text-text-3 text-lg font-light select-none ml-2">›</span>
               </div>
             );
           })}

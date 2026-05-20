@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0f0f10;
+  --surface: #17171a;
+  --surface-2: #1e1e22;
+  --border: #2a2a30;
+  --text: #e8e8ed;
+  --text-2: #8888a0;
+  --text-3: #58586f;
+
+  --piano: #3b82f6;
+  --piano-bg: #1a2540;
+  --robotica: #10b981;
+  --robotica-bg: #0f2a22;
+  --matematica: #f59e0b;
+  --matematica-bg: #2a1f0a;
+  --ingles: #8b5cf6;
+  --ingles-bg: #1e1530;
+  --bateria: #ec4899;
+  --bateria-bg: #2a1020;
+  --reforco: #f97316;
+  --reforco-bg: #2a1508;
+
+  --danger: #ef4444;
+  --danger-bg: #2a1212;
+  --warning: #eab308;
+  --warning-bg: #2a2010;
+  --success: #22c55e;
+  --success-bg: #0f2a1a;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Syne', sans-serif;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}

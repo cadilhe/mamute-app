@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { schedule as scheduleApi } from '../../lib/api';
+import { schedule as scheduleApi } from '@/lib/api';
 import { DisciplineBadge } from '../shared/Badge';
 import { Loading } from '../shared/Loading';
 
@@ -10,39 +12,55 @@ export function SchedulePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    scheduleApi.list().then(({ data: d }) => { setData(d || []); setLoading(false); });
+    scheduleApi.list().then(({ data: d }) => {
+      setData(d || []);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) return <Loading />;
 
   const byDay = {};
-  DAYS.forEach((_, i) => { byDay[i+1] = data.filter(s => s.day_of_week === i+1); });
+  DAYS.forEach((_, i) => {
+    byDay[i + 1] = data.filter(s => s.day_of_week === i + 1);
+  });
 
   return (
-    <div>
-      <div style={{ marginBottom:24 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.5px' }}>Agenda</h1>
-        <p style={{ color:'var(--text-3)', fontSize:13, marginTop:2 }}>Grade semanal de aulas</p>
+    <div className="w-full animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
+        <p className="text-xs text-text-3 mt-0.5">Grade semanal de aulas</p>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {DAYS.map((day, i) => (
-          <div key={day} style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', overflow:'hidden' }}>
-            <div style={{ padding:'12px 16px', background:'var(--surface-2)', borderBottom:'1px solid var(--border)' }}>
-              <div style={{ fontWeight:600, fontSize:14 }}>{day}</div>
-              <div style={{ fontSize:11, color:'var(--text-3)' }}>{byDay[i+1]?.length || 0} aulas</div>
+          <div key={day} className="bg-surface rounded-xl border border-border overflow-hidden flex flex-col">
+            <div className="px-4 py-3 bg-surface-2 border-b border-border select-none">
+              <div className="font-semibold text-sm text-text">{day}</div>
+              <div className="text-[10px] text-text-3 mt-0.5">{byDay[i + 1]?.length || 0} aulas</div>
             </div>
-            <div style={{ padding:'10px 12px', display:'flex', flexDirection:'column', gap:6, minHeight:80 }}>
-              {byDay[i+1]?.length === 0 ? (
-                <div style={{ color:'var(--text-3)', fontSize:12, textAlign:'center', padding:12 }}>—</div>
-              ) : byDay[i+1]?.map(s => (
-                <div key={s.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--bg)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <div>
-                    <div style={{ fontWeight:500, fontSize:13 }}>{s.students?.name}</div>
-                    <div style={{ fontSize:11, color:'var(--text-3)' }}>{s.start_time?.slice(0,5)} – {s.end_time?.slice(0,5)}</div>
+            
+            <div className="p-3 flex flex-col gap-2 min-h-[80px] justify-start">
+              {byDay[i + 1]?.length === 0 ? (
+                <div className="text-text-3 text-xs text-center py-4 w-full select-none">—</div>
+              ) : (
+                byDay[i + 1]?.map(s => (
+                  <div
+                    key={s.id}
+                    className="p-2.5 rounded-lg bg-bg border border-border/30 flex justify-between items-center gap-2 hover:border-text-3 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-xs text-text truncate">{s.students?.name}</div>
+                      <div className="text-[10px] text-text-3 mt-0.5 font-medium">
+                        {s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      <DisciplineBadge discipline={s.modules?.discipline} />
+                    </div>
                   </div>
-                  <DisciplineBadge discipline={s.modules?.discipline} />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         ))}

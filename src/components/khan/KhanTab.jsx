@@ -1,8 +1,9 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { khan as khanApi } from '../../lib/api';
-import { Button } from '../shared/Button';
+import { khan as khanApi } from '@/lib/api';
 import { Loading, EmptyState } from '../shared/Loading';
-import { KHAN_BASE_URL } from '../../lib/constants';
+import { KHAN_BASE_URL } from '@/lib/constants';
 
 export function KhanTab({ studentId }) {
   const [profile, setProfile] = useState(null);
@@ -17,60 +18,89 @@ export function KhanTab({ studentId }) {
 
   if (loading) return <Loading />;
 
-  if (!profile) return (
-    <EmptyState icon="📚" title="Khan Academy não configurado"
-      description="Adicione o perfil Khan Academy deste aluno para rastrear o progresso." />
-  );
+  if (!profile) {
+    return (
+      <EmptyState
+        icon="📚"
+        title="Khan Academy não configurado"
+        description="Adicione o perfil Khan Academy deste aluno para rastrear o progresso."
+      />
+    );
+  }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+    <div className="flex flex-col gap-4">
       {/* Profile */}
-      <div style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:20 }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
+      <div className="bg-surface rounded-xl border border-border p-5">
+        <div className="flex justify-between items-start mb-4 flex-col sm:flex-row gap-3">
           <div>
-            <div style={{ fontWeight:600, fontSize:15 }}>{profile.khan_username || 'Usuário Khan'}</div>
-            <a href={profile.profile_url || KHAN_BASE_URL} target="_blank" rel="noreferrer"
-              style={{ fontSize:12, color:'#3B82F6' }}>Ver perfil no Khan Academy →</a>
+            <div className="font-semibold text-base text-text">{profile.khan_username || 'Usuário Khan'}</div>
+            <a
+              href={profile.profile_url || KHAN_BASE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-piano hover:underline inline-block mt-0.5"
+            >
+              Ver perfil no Khan Academy →
+            </a>
           </div>
-          <div style={{ display:'flex', gap:12 }}>
+          <div className="flex gap-4 sm:self-center select-none">
             {[
-              { label:'Streak', value:profile.streak_days+'d' },
-              { label:'Min/semana', value:profile.minutes_week },
+              { label: 'Streak', value: profile.streak_days + 'd' },
+              { label: 'Min/semana', value: profile.minutes_week },
             ].map(s => (
-              <div key={s.label} style={{ textAlign:'center' }}>
-                <div style={{ fontWeight:700, fontSize:20 }}>{s.value || 0}</div>
-                <div style={{ fontSize:11, color:'var(--text-3)' }}>{s.label}</div>
+              <div key={s.label} className="text-center">
+                <div className="font-bold text-xl text-text">{s.value || 0}</div>
+                <div className="text-[10px] text-text-3 font-semibold uppercase tracking-wider">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Topics */}
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        <div className="flex flex-col gap-3 mt-4 border-t border-border pt-4">
           {(profile.khan_topics || []).map(topic => (
-            <div key={topic.id} style={{ background:'var(--bg)', borderRadius:10, padding:'12px 16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, alignItems:'center' }}>
+            <div key={topic.id} className="bg-bg rounded-xl p-4 border border-border/40">
+              <div className="flex justify-between items-center mb-2.5">
                 <div>
-                  <div style={{ fontWeight:500 }}>{topic.name}</div>
-                  <a href={topic.url || KHAN_BASE_URL} target="_blank" rel="noreferrer"
-                    style={{ fontSize:11, color:'#3B82F6' }}>Abrir no Khan →</a>
+                  <div className="font-medium text-sm text-text">{topic.name}</div>
+                  <a
+                    href={topic.url || KHAN_BASE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-piano hover:underline mt-0.5 inline-block"
+                  >
+                    Abrir no Khan →
+                  </a>
                 </div>
-                <span style={{ fontSize:12, fontWeight:600 }}>{topic.progress || 0}%</span>
+                <span className="text-xs font-semibold text-text">{topic.progress || 0}%</span>
               </div>
-              <div style={{ height:6, borderRadius:3, background:'var(--border)' }}>
-                <div style={{ height:'100%', borderRadius:3, background:'#F59E0B', width:(topic.progress||0)+'%', transition:'width 0.5s' }} />
+              <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden w-full mb-3">
+                <div
+                  className="h-full rounded-full bg-warning transition-all duration-500"
+                  style={{ width: `${topic.progress || 0}%` }}
+                />
               </div>
               {(topic.khan_subtopics || []).map(sub => (
-                <div key={sub.id} style={{ display:'flex', justifyContent:'space-between', padding:'4px 0', marginTop:4, fontSize:12, color:'var(--text-2)' }}>
-                  <span>{sub.name}</span>
-                  <a href={sub.url || KHAN_BASE_URL} target="_blank" rel="noreferrer"
-                    style={{ color:'#3B82F6' }}>Abrir →</a>
+                <div
+                  key={sub.id}
+                  className="flex justify-between items-center py-1 mt-1 border-t border-border/20 text-xs text-text-2"
+                >
+                  <span className="truncate max-w-[70%]">{sub.name}</span>
+                  <a
+                    href={sub.url || KHAN_BASE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-piano hover:underline shrink-0"
+                  >
+                    Abrir →
+                  </a>
                 </div>
               ))}
             </div>
           ))}
           {(profile.khan_topics || []).length === 0 && (
-            <p style={{ color:'var(--text-3)', fontSize:13 }}>Nenhum tópico cadastrado.</p>
+            <p className="text-text-3 text-xs">Nenhum tópico cadastrado.</p>
           )}
         </div>
       </div>

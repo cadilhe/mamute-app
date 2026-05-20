@@ -1,12 +1,13 @@
 # Setup Guide — MAMUTE
 
-Guia completo para configurar o ambiente do zero.
+Guia completo para configurar o ambiente de desenvolvimento e produção do zero.
 
 ---
 
 ## Pré-requisitos
 
 - Node.js 18+ instalado
+- Gerenciador de pacotes `pnpm` (`npm i -g pnpm`)
 - Conta no Supabase (supabase.com)
 - Conta no Vercel (vercel.com) — para deploy
 - Git instalado
@@ -23,7 +24,7 @@ Guia completo para configurar o ambiente do zero.
 
 ### 1.2 Rodar o schema
 1. No menu lateral: SQL Editor → New query
-2. Cole o conteúdo de `architecture/DATABASE_SCHEMA.md` (seção SQL Completo)
+2. Cole o conteúdo de [DATABASE_SCHEMA.md](file:///d:/projects/react_projects/mamute-app/docs/architecture/DATABASE_SCHEMA.md) (seção SQL Completo)
 3. Execute com Run (Ctrl+Enter)
 4. Verifique em Table Editor: devem aparecer ~11 tabelas
 
@@ -36,28 +37,27 @@ Project Settings → API:
 Authentication → Users → Add user:
 - Email: email do professor
 - Password: senha segura
-- O profile é criado automaticamente pelo trigger
+- O profile é criado automaticamente pelo trigger do banco com o role `'teacher'`
 
 ---
 
-## 2. Projeto React — Setup local
+## 2. Projeto Next.js — Setup local
 
 ### 2.1 Instalar dependências
 ```bash
-cd mamute
-npm install
+pnpm install
 ```
 
 ### 2.2 Configurar variáveis de ambiente
-Crie o arquivo `.env` na raiz do projeto:
+Crie o arquivo `.env` na raiz do projeto (copie do `.env.example`):
 ```
-REACT_APP_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=sua-anon-key-aqui
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
 ```
 
 ### 2.3 Rodar em desenvolvimento
 ```bash
-npm start
+pnpm dev
 ```
 Acesse: http://localhost:3000
 
@@ -70,23 +70,22 @@ Use as credenciais do professor criadas no passo 1.4.
 
 ### 3.1 Subir para GitHub
 ```bash
-git init
 git add .
 git commit -m "feat: initial commit"
-git remote add origin https://github.com/seu-usuario/mamute.git
+git remote add origin https://github.com/seu-usuario/mamute-app.git
 git push -u origin main
 ```
 
 ### 3.2 Importar no Vercel
 1. vercel.com → New Project → Import Git Repository
-2. Selecione o repositório `mamute`
-3. Framework Preset: Create React App
+2. Selecione o repositório `mamute-app`
+3. Framework Preset: **Next.js** (autodetectado)
 4. Em Environment Variables, adicione:
-   - `REACT_APP_SUPABASE_URL`
-   - `REACT_APP_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. Deploy
 
-Após o deploy, Vercel fornece uma URL pública (ex: `mamute.vercel.app`).
+Após o deploy, o Vercel fornece uma URL pública (ex: `mamute-app.vercel.app`).
 
 ---
 
@@ -109,7 +108,7 @@ VALUES ('uuid-do-responsavel', 'uuid-do-aluno');
 ```
 
 O responsável acessa a URL do sistema normalmente.
-O sistema detecta o role e redireciona para a visão dos pais.
+O sistema detecta o role `'parent'` e renderiza o Portal dos Pais (/pais).
 
 ---
 
@@ -117,8 +116,8 @@ O sistema detecta o role e redireciona para a visão dos pais.
 
 | Variável | Obrigatória | Onde pegar |
 |---|---|---|
-| `REACT_APP_SUPABASE_URL` | Sim | Supabase → Project Settings → API |
-| `REACT_APP_SUPABASE_ANON_KEY` | Sim | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_URL` | Sim | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Supabase → Project Settings → API |
 
 ---
 
@@ -126,7 +125,7 @@ O sistema detecta o role e redireciona para a visão dos pais.
 
 ### "Variáveis de ambiente não configuradas"
 → Verifique se o arquivo `.env` existe na raiz (mesmo nível de `package.json`)
-→ Reinicie o servidor de desenvolvimento após criar/editar `.env`
+→ Reinicie o servidor de desenvolvimento após criar/editar o `.env`
 
 ### Login não funciona
 → Verifique se o usuário foi criado em Authentication → Users
@@ -138,4 +137,4 @@ O sistema detecta o role e redireciona para a visão dos pais.
 
 ### Responsável vê dados de outros alunos
 → RLS não está ativo — rode os comandos `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`
-→ Crie as policies conforme `architecture/DATABASE_SCHEMA.md`
+→ Crie as policies conforme [DATABASE_SCHEMA.md](file:///d:/projects/react_projects/mamute-app/docs/architecture/DATABASE_SCHEMA.md)

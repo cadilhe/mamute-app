@@ -1,20 +1,22 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStudents } from '../../hooks/useStudents';
-import { classes as classesApi } from '../../lib/api';
-import { DISCIPLINES } from '../../lib/constants';
+import { useRouter } from 'next/navigation';
+import { useStudents } from '@/hooks/useStudents';
+import { classes as classesApi } from '@/lib/api';
+import { DISCIPLINES } from '@/lib/constants';
 import { DisciplineBadge } from '../shared/Badge';
 import { Card } from '../shared/Card';
 import { Loading } from '../shared/Loading';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub, colorClass }) {
   return (
-    <Card style={{ display:'flex', flexDirection:'column', gap:4 }}>
-      <div style={{ fontSize:28, fontWeight:700, color: color||'var(--text)' }}>{value}</div>
-      <div style={{ fontWeight:500 }}>{label}</div>
-      {sub && <div style={{ fontSize:12, color:'var(--text-3)' }}>{sub}</div>}
+    <Card className="flex flex-col gap-1">
+      <div className={`text-3xl font-bold ${colorClass || 'text-text'}`}>{value}</div>
+      <div className="font-semibold text-sm text-text mt-1">{label}</div>
+      {sub && <div className="text-xs text-text-3 mt-0.5">{sub}</div>}
     </Card>
   );
 }
@@ -22,7 +24,7 @@ function StatCard({ label, value, sub, color }) {
 export function Dashboard() {
   const { data: students, loading } = useStudents();
   const [todayClasses, setTodayClasses] = useState([]);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     classesApi.listToday().then(({ data }) => setTodayClasses(data || []));
@@ -37,35 +39,43 @@ export function Dashboard() {
   }));
 
   return (
-    <div>
-      <div style={{ marginBottom:24 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.5px' }}>Dashboard</h1>
-        <p style={{ color:'var(--text-3)', fontSize:13, marginTop:2, textTransform:'capitalize' }}>{today}</p>
+    <div className="w-full animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Dashboard</h1>
+        <p className="text-xs text-text-3 mt-0.5 capitalize">{today}</p>
       </div>
 
       {/* Stats */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:12, marginBottom:24 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <StatCard label="Alunos ativos" value={students.length} sub="total na plataforma" />
-        <StatCard label="Aulas hoje" value={todayClasses.length} sub="registradas" color="#3B82F6" />
+        <StatCard label="Aulas hoje" value={todayClasses.length} sub="registradas" colorClass="text-piano" />
         <StatCard label="Disciplinas" value={Object.keys(disciplines).length} sub="em andamento" />
       </div>
 
-      {/* Aulas de Hoje */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+      {/* Aulas de Hoje e Disciplinas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Aulas de Hoje */}
         <Card>
-          <h2 style={{ fontWeight:600, fontSize:15, marginBottom:16 }}>Aulas de Hoje</h2>
+          <h2 className="font-semibold text-sm mb-4 text-text">Aulas de Hoje</h2>
           {todayClasses.length === 0 ? (
-            <p style={{ color:'var(--text-3)', fontSize:13 }}>Nenhuma aula registrada hoje.</p>
+            <p className="text-text-3 text-xs">Nenhuma aula registrada hoje.</p>
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div className="flex flex-col gap-2">
               {todayClasses.map(c => (
-                <div key={c.id} onClick={() => navigate('/alunos/' + c.student_id)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:8, background:'var(--surface-2)', cursor:'pointer' }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:500 }}>{c.students?.name}</div>
-                    <div style={{ fontSize:12, color:'var(--text-3)' }}>{c.content?.substring(0, 60) || 'Sem descrição'}</div>
+                <div
+                  key={c.id}
+                  onClick={() => router.push('/alunos/' + c.student_id)}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-surface-2 cursor-pointer transition-all hover:bg-surface-2/60"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-text truncate">{c.students?.name}</div>
+                    <div className="text-xs text-text-3 mt-0.5 truncate">
+                      {c.content?.substring(0, 60) || 'Sem descrição'}
+                    </div>
                   </div>
-                  <DisciplineBadge discipline={c.modules?.discipline} />
+                  <div className="shrink-0">
+                    <DisciplineBadge discipline={c.modules?.discipline} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -74,23 +84,32 @@ export function Dashboard() {
 
         {/* Disciplinas */}
         <Card>
-          <h2 style={{ fontWeight:600, fontSize:15, marginBottom:16 }}>Alunos por Disciplina</h2>
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <h2 className="font-semibold text-sm mb-4 text-text">Alunos por Disciplina</h2>
+          <div className="flex flex-col gap-4">
             {Object.entries(disciplines).map(([disc, count]) => {
-              const d = DISCIPLINES[disc] || { label: disc, color:'#6B7280', bg:'#F9FAFB' };
+              const d = DISCIPLINES[disc] || { label: disc, color: '#6b6860', bg: 'transparent' };
               const pct = Math.round((count / students.length) * 100);
               return (
-                <div key={disc}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                    <span style={{ fontSize:13, fontWeight:500 }}>{d.label}</span>
-                    <span style={{ fontSize:12, color:'var(--text-3)' }}>{count} alunos</span>
+                <div key={disc} className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center mb-1 select-none">
+                    <span className="text-sm font-medium text-text">{d.label}</span>
+                    <span className="text-xs text-text-3">{count} alunos</span>
                   </div>
-                  <div style={{ height:6, borderRadius:3, background:'var(--surface-2)' }}>
-                    <div style={{ height:'100%', borderRadius:3, background:d.color, width: pct+'%', transition:'width 0.5s' }} />
+                  <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden w-full">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        backgroundColor: d.color,
+                        width: `${pct}%`,
+                      }}
+                    />
                   </div>
                 </div>
               );
             })}
+            {Object.keys(disciplines).length === 0 && (
+              <p className="text-text-3 text-xs">Nenhuma disciplina em andamento.</p>
+            )}
           </div>
         </Card>
       </div>

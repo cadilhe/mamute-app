@@ -1,7 +1,9 @@
+'use client';
+
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useStudent } from '../../hooks/useStudents';
-import { useClassesByStudent } from '../../hooks/useClasses';
+import { useParams, useRouter } from 'next/navigation';
+import { useStudent } from '@/hooks/useStudents';
+import { useClassesByStudent } from '@/hooks/useClasses';
 import { DisciplineBadge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { Card } from '../shared/Card';
@@ -16,82 +18,95 @@ const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy'];
 
 export function StudentDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { data: student, loading, refetch } = useStudent(id);
+  const router = useRouter();
+  const { data: student, loading } = useStudent(id);
   const { data: classHistory, refetch: refetchClasses } = useClassesByStudent(id);
   const [tab, setTab] = useState('Hoje');
   const [showRegister, setShowRegister] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
   if (loading) return <Loading />;
-  if (!student) return <div style={{ padding:32, color:'var(--text-3)' }}>Aluno não encontrado.</div>;
+  if (!student) return <div className="p-8 text-text-3 text-sm">Aluno não encontrado.</div>;
 
   const lastClass = classHistory[0];
-  const pendencies = classHistory.filter(c => c.pending && c.pending.trim()).slice(0, 3);
 
   return (
-    <div>
+    <div className="w-full animate-fade-in">
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:24 }}>
-        <button onClick={()=>navigate('/alunos')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', fontSize:18 }}>←</button>
-        <div style={{ width:48, height:48, borderRadius:'50%', background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:20 }}>
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => router.push('/alunos')}
+          className="bg-transparent border-none cursor-pointer text-text-3 text-2xl hover:text-text transition-colors select-none"
+        >
+          ←
+        </button>
+        <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center font-bold text-xl text-text select-none shrink-0">
           {student.name.charAt(0).toUpperCase()}
         </div>
-        <div style={{ flex:1 }}>
-          <h1 style={{ fontSize:20, fontWeight:700, letterSpacing:'-0.5px' }}>{student.name}</h1>
-          <div style={{ fontSize:13, color:'var(--text-3)' }}>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-text truncate">{student.name}</h1>
+          <div className="text-xs text-text-3 mt-0.5">
             {student.age && `${student.age} anos`}{student.school && ` · ${student.school}`}
           </div>
         </div>
-        <div style={{ display:'flex', gap:6 }}>
-          {(student.modules || []).map(m => <DisciplineBadge key={m.id} discipline={m.discipline} />)}
+        <div className="flex gap-1.5 shrink-0">
+          {(student.modules || []).map(m => (
+            <DisciplineBadge key={m.id} discipline={m.discipline} />
+          ))}
         </div>
-        <Button variant="secondary" onClick={()=>setShowReport(true)}>📋 Relatório</Button>
-        <Button onClick={()=>setShowRegister(true)}>+ Registrar aula</Button>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="secondary" onClick={() => setShowReport(true)}>📋 Relatório</Button>
+          <Button onClick={() => setShowRegister(true)}>+ Registrar aula</Button>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display:'flex', gap:0, marginBottom:20, borderBottom:'1px solid var(--border)' }}>
+      <div className="flex border-b border-border mb-5 overflow-x-auto select-none">
         {TABS.map(t => (
-          <button key={t} onClick={()=>setTab(t)} style={{
-            padding:'10px 18px', background:'none', border:'none', cursor:'pointer',
-            fontFamily:'inherit', fontSize:14, fontWeight: tab===t ? 600 : 400,
-            color: tab===t ? 'var(--text)' : 'var(--text-3)',
-            borderBottom: tab===t ? '2px solid var(--text)' : '2px solid transparent',
-            marginBottom:'-1px', transition:'all 0.15s',
-          }}>{t}</button>
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4.5 py-2.5 bg-transparent border-b-2 cursor-pointer text-sm transition-all -mb-px outline-none ${
+              tab === t
+                ? 'font-semibold text-text border-text'
+                : 'font-normal text-text-3 border-transparent hover:text-text-2'
+            }`}
+          >
+            {t}
+          </button>
         ))}
       </div>
 
       {/* Tab: Hoje */}
       {tab === 'Hoje' && (
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+        <div className="flex flex-col gap-4">
           {lastClass ? (
             <Card>
-              <div style={{ fontSize:12, color:'var(--text-3)', marginBottom:4 }}>Última aula</div>
-              <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:8 }}>
+              <div className="text-xs text-text-3 mb-1">Última aula</div>
+              <div className="flex gap-2 items-center mb-2">
                 <DisciplineBadge discipline={lastClass.modules?.discipline} />
-                <span style={{ fontSize:13, color:'var(--text-3)' }}>
+                <span className="text-sm text-text-3">
                   {format(new Date(lastClass.date), "d 'de' MMMM", { locale: ptBR })}
                 </span>
               </div>
-              <p style={{ fontSize:14, lineHeight:1.6 }}>{lastClass.content || 'Sem descrição'}</p>
+              <p className="text-sm leading-relaxed text-text-2">{lastClass.content || 'Sem descrição'}</p>
+              
               {lastClass.pending && (
-                <div style={{ marginTop:12, padding:'10px 12px', borderRadius:8, background:'#FFFBEB', borderLeft:'3px solid #F59E0B' }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:'#F59E0B', marginBottom:2 }}>PENDÊNCIAS</div>
-                  <div style={{ fontSize:13 }}>{lastClass.pending}</div>
+                <div className="mt-3 p-3 rounded-lg bg-warning-bg/40 border-l-4 border-warning">
+                  <div className="text-[10px] font-bold text-warning tracking-wider mb-0.5">PENDÊNCIAS</div>
+                  <div className="text-sm text-text">{lastClass.pending}</div>
                 </div>
               )}
               {lastClass.next_step && (
-                <div style={{ marginTop:8, padding:'10px 12px', borderRadius:8, background:'#ECFDF5', borderLeft:'3px solid #10B981' }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:'#10B981', marginBottom:2 }}>PRÓXIMO PASSO</div>
-                  <div style={{ fontSize:13 }}>{lastClass.next_step}</div>
+                <div className="mt-2.5 p-3 rounded-lg bg-success-bg/40 border-l-4 border-success">
+                  <div className="text-[10px] font-bold text-success tracking-wider mb-0.5">PRÓXIMO PASSO</div>
+                  <div className="text-sm text-text">{lastClass.next_step}</div>
                 </div>
               )}
             </Card>
           ) : (
             <Card>
-              <p style={{ color:'var(--text-3)', fontSize:14 }}>Nenhuma aula registrada ainda.</p>
+              <p className="text-text-3 text-sm">Nenhuma aula registrada ainda.</p>
             </Card>
           )}
         </div>
@@ -99,43 +114,52 @@ export function StudentDetail() {
 
       {/* Tab: Histórico */}
       {tab === 'Histórico' && (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div className="flex flex-col gap-2.5">
           {classHistory.length === 0 ? (
-            <p style={{ color:'var(--text-3)', padding:24 }}>Nenhuma aula registrada.</p>
-          ) : classHistory.map((c, i) => (
-            <Card key={c.id} style={{ padding:'14px 20px' }}>
-              <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:6 }}>
-                <DisciplineBadge discipline={c.modules?.discipline} />
-                <span style={{ fontSize:12, color:'var(--text-3)' }}>
-                  {format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </span>
-              </div>
-              <p style={{ fontSize:14, color:'var(--text-2)', lineHeight:1.5 }}>{c.content || 'Sem descrição'}</p>
-              {c.pending && <p style={{ fontSize:12, color:'#F59E0B', marginTop:4 }}>⚠ {c.pending}</p>}
-            </Card>
-          ))}
+            <p className="text-text-3 text-sm p-6 text-center bg-surface rounded-xl border border-border">
+              Nenhuma aula registrada.
+            </p>
+          ) : (
+            classHistory.map(c => (
+              <Card key={c.id} className="px-5 py-3.5">
+                <div className="flex gap-2 items-center mb-1.5">
+                  <DisciplineBadge discipline={c.modules?.discipline} />
+                  <span className="text-xs text-text-3">
+                    {format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </span>
+                </div>
+                <p className="text-sm text-text-2 leading-normal">{c.content || 'Sem descrição'}</p>
+                {c.pending && <p className="text-xs text-warning mt-1 font-medium">⚠ {c.pending}</p>}
+              </Card>
+            ))
+          )}
         </div>
       )}
 
       {/* Tab: Progresso */}
       {tab === 'Progresso' && (
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        <div className="flex flex-col gap-3">
           {(student.progress || []).map(p => {
             const d = p.discipline;
             return (
               <Card key={p.id}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, alignItems:'center' }}>
+                <div className="flex justify-between items-center mb-2">
                   <DisciplineBadge discipline={d} size="md" />
-                  <span style={{ fontSize:13, fontWeight:600 }}>{p.percent || 0}%</span>
+                  <span className="text-sm font-semibold text-text">{p.percent || 0}%</span>
                 </div>
-                <div style={{ height:8, borderRadius:4, background:'var(--surface-2)' }}>
-                  <div style={{ height:'100%', borderRadius:4, background:'var(--text)', width:(p.percent||0)+'%', transition:'width 0.5s' }} />
+                <div className="h-2 rounded bg-surface-2 overflow-hidden w-full">
+                  <div
+                    className="h-full rounded bg-text transition-all duration-500"
+                    style={{ width: `${p.percent || 0}%` }}
+                  />
                 </div>
-                {p.notes && <p style={{ fontSize:12, color:'var(--text-3)', marginTop:8 }}>{p.notes}</p>}
+                {p.notes && <p className="text-xs text-text-3 mt-2">{p.notes}</p>}
               </Card>
             );
           })}
-          {(student.progress || []).length === 0 && <p style={{ color:'var(--text-3)' }}>Nenhum progresso registrado.</p>}
+          {(student.progress || []).length === 0 && (
+            <p className="text-text-3 text-sm">Nenhum progresso registrado.</p>
+          )}
         </div>
       )}
 
@@ -144,13 +168,19 @@ export function StudentDetail() {
 
       {/* Modals */}
       <RegisterClassModal
-        open={showRegister} onClose={()=>setShowRegister(false)}
+        open={showRegister}
+        onClose={() => setShowRegister(false)}
         student={student}
-        onSuccess={()=>{ setShowRegister(false); refetchClasses(); }}
+        onSuccess={() => {
+          setShowRegister(false);
+          refetchClasses();
+        }}
       />
       <ReportModal
-        open={showReport} onClose={()=>setShowReport(false)}
-        student={student} classHistory={classHistory}
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        student={student}
+        classHistory={classHistory}
       />
     </div>
   );

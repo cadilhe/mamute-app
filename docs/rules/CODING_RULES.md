@@ -9,11 +9,12 @@ Um agente de IA ou desenvolvedor deve seguir estas regras sem exceção.
 
 | Tecnologia | Versão | Notas |
 |---|---|---|
-| React | 18.x | Hooks only, sem class components |
-| React Router | 6.x | `useNavigate`, `useParams` |
+| Next.js | 14.x+ | App Router, rotas físicas, Route Groups |
+| React | 18.x | Hooks only, sem Class Components |
 | Supabase JS | 2.x | `@supabase/supabase-js` |
-| date-fns | 3.x | Para datas. Nunca `moment.js` |
-| lucide-react | latest | Ícones. Apenas quando necessário |
+| Tailwind CSS | 3.x | Estilização principal por classes utilitárias |
+| date-fns | 3.x | Para tratamento de datas. Nunca `moment.js` |
+| lucide-react | latest | Pacote de ícones oficiais |
 
 ---
 
@@ -21,31 +22,52 @@ Um agente de IA ou desenvolvedor deve seguir estas regras sem exceção.
 
 ```
 src/
+  app/
+    (app)/              # Grupo de rotas autenticadas (Dashboard, Alunos, Agenda, etc.)
+      layout.js         # Layout privado (verifica auth +Sidebar)
+      page.js           # Rota '/' (Dashboard)
+      alunos/           # Rota '/alunos'
+        page.js
+        [id]/           # Rota '/alunos/:id'
+          page.js
+      agenda/           # Rota '/agenda'
+        page.js
+      visao-geral/      # Rota '/visao-geral'
+        page.js
+      pais/             # Rota '/pais' (Portal dos Pais)
+        page.js
+    (auth)/             # Grupo de rotas públicas de autenticação
+      login/            # Rota '/login'
+        page.js
+    globals.css         # Importações do Tailwind + Variáveis CSS globais
+    layout.js           # Layout global raiz
+    providers.js        # Provedor do AuthProvider
   components/
-    <feature>/          # Um diretório por feature
-      FeatureName.jsx   # PascalCase sempre
+    <feature>/          # Componentes específicos por funcionalidade
+    shared/             # Componentes compartilhados reutilizáveis
   hooks/
-    useNomeCamelCase.js
+    useNomeCamelCase.js # Hooks de cliente (ex: useAuth.js)
   lib/
-    supabase.js         # cliente singleton
-    api.js              # todas as queries — nunca query fora daqui
-    constants.js        # sem magic strings no código
-  styles/
-    globals.css         # design tokens via CSS variables
+    supabase.js         # Cliente singleton do Supabase
+    api.js              # TODAS AS QUERIES — nunca faça queries fora daqui
+    constants.js        # Constantes globais (ex: DISCIPLINES)
 ```
 
 **Regras de nomenclatura:**
-- Componentes: `PascalCase.jsx`
+- Componentes e Páginas: `PascalCase.jsx` ou `page.js`
 - Hooks: `useCamelCase.js`
-- Utilitários: `camelCase.js`
+- Utilitários/API: `camelCase.js`
 - Constantes: `UPPER_SNAKE_CASE`
-- CSS vars: `--kebab-case`
+- Variáveis CSS: `--kebab-case`
 
 ---
 
 ## Componentes React
 
-### Obrigatório
+### Diretiva 'use client'
+Em Next.js App Router, componentes e páginas que utilizam hooks de estado (`useState`, `useEffect`, `useContext`) ou do roteador de cliente devem possuir `'use client';` como primeira linha.
+
+### Export Nomeado
 ```jsx
 // CORRETO: função nomeada exportada
 export function MinhaPage() { ... }
@@ -60,29 +82,18 @@ export default () => { ... }
 export function Button({ children, variant = 'primary', disabled = false, onClick }) { ... }
 ```
 
-### Estado
+### Estado derivado
 ```jsx
-// Estado local: useState
-// Estado derivado: useMemo ou calcular inline
 // Nunca duplicar estado que pode ser derivado de outro
 const [students, setStudents] = useState([]);
 const filtered = students.filter(s => s.name.includes(search)); // derivado, não estado
-```
-
-### Efeitos
-```jsx
-// useEffect com dependências explícitas sempre
-// Extrair lógica de fetch para hooks customizados (src/hooks/)
-useEffect(() => {
-  fetchData();
-}, [studentId]); // dependências obrigatórias
 ```
 
 ---
 
 ## Queries ao banco
 
-**Regra de ouro: toda query fica em `src/lib/api.js`. Zero queries em componentes.**
+**Regra de ouro: toda query fica em `src/lib/api.js`. Zero queries diretas em componentes.**
 
 ```js
 // CORRETO — em api.js
@@ -94,67 +105,42 @@ export const students = {
 const { data } = await supabase.from('students').select('*'); // proibido fora de api.js
 ```
 
-### Tratamento de erro
-```js
-// Sempre desestruturar { data, error }
-const { data, error } = await students.list();
-if (error) {
-  console.error('Erro ao buscar alunos:', error.message);
-  setError(error.message);
-  return;
-}
-```
-
 ---
 
 ## Estilização
 
-**Regra: inline styles com CSS variables. Sem CSS Modules, sem Tailwind, sem styled-components.**
+**Regra: Uso exclusivo do Tailwind CSS v3 e Variáveis CSS globais mapeadas no tailwind.config.js. Sem CSS Modules, sem estilos inline desnecessários.**
 
 ```jsx
 // CORRETO
-<div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: 20 }}>
+<div className="bg-surface rounded-xl p-5 border border-border">
 
 // ERRADO
-<div className="bg-white rounded-xl p-5">  // sem Tailwind
-<div className={styles.container}>         // sem CSS Modules
+<div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: 20 }}>
 ```
 
-### Design tokens disponíveis (globals.css)
+### Design tokens estendidos do Tailwind (tailwind.config.js):
 ```
-Cores de fundo:   --bg, --surface, --surface-2
-Bordas:           --border
-Texto:            --text, --text-2, --text-3
-Disciplinas:      --piano, --piano-bg, --robotica, --robotica-bg, ...
-Alertas:          --danger, --danger-bg, --warning, --warning-bg, --success, --success-bg
-Layout:           --sidebar-w (220px)
-Formas:           --radius (12px), --radius-sm (8px)
-Sombras:          --shadow, --shadow-md
-```
-
-### Componentes shared prontos (usar sempre antes de criar novo)
-```
-Button      → src/components/shared/Button.jsx
-Card        → src/components/shared/Card.jsx
-Modal       → src/components/shared/Modal.jsx
-Input       → src/components/shared/Input.jsx
-Textarea    → src/components/shared/Input.jsx
-Select      → src/components/shared/Input.jsx
-Loading     → src/components/shared/Loading.jsx
-EmptyState  → src/components/shared/Loading.jsx
-DisciplineBadge → src/components/shared/Badge.jsx
-AlertBadge  → src/components/shared/Badge.jsx
+bg-bg              → Cor de fundo principal (#0f0f10)
+bg-surface         → Fundo secundário (#17171a)
+bg-surface-2       → Fundo terciário (#1e1e22)
+border-border      → Cor das bordas (#2a2a30)
+text-text          → Texto principal (#e8e8ed)
+text-text-2        → Texto secundário (#8888a0)
+text-text-3        → Texto desabilitado/discreto (#58586f)
+text-danger / bg-danger-bg / border-danger     → Alerta de atenção
+text-warning / bg-warning-bg / border-warning → Alerta de pendência
+text-success / bg-success-bg / border-success → Alerta em dia
 ```
 
 ---
 
 ## Autenticação e segurança
 
-- Toda rota do professor é protegida por `<ProtectedRoute>` em `App.js`
-- Responsável **nunca** acessa rotas do professor
-- Row Level Security (RLS) está ativo no Supabase — nunca desativar
-- `REACT_APP_SUPABASE_ANON_KEY` é pública por design — não é segredo
-- Nunca commitar `.env` (está no `.gitignore`)
+- Toda rota protegida do professor e do responsável fica sob o grupo de rotas `(app)/` e é validada no [layout.js (Privado)](file:///d:/projects/react_projects/mamute-app/src/app/(app)/layout.js).
+- Row Level Security (RLS) está ativo no Supabase — nunca desative ou ignore as policies.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` é pública por design.
+- Nunca comite o arquivo `.env` (deve ser mantido no `.gitignore`).
 
 ---
 
@@ -167,51 +153,15 @@ import { ptBR } from 'date-fns/locale';
 
 format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
 // → "15 de março de 2025"
-
-// Data de hoje para inserção no banco
-format(new Date(), 'yyyy-MM-dd')
-// → "2025-03-15"
 ```
 
 ---
 
-## Padrões proibidos
+## Git e Commits
 
-```jsx
-// ❌ Nunca: index como key em listas que mudam
-items.map((item, i) => <div key={i}>)
-
-// ✅ Sempre: ID único
-items.map(item => <div key={item.id}>)
-
-// ❌ Nunca: mutation direta de estado
-state.items.push(newItem);
-
-// ✅ Sempre: novo array/objeto
-setItems(prev => [...prev, newItem]);
-
-// ❌ Nunca: console.log em produção (usar só durante dev)
-// ✅ Remover antes de commitar
-
-// ❌ Nunca: texto hardcoded de disciplina
-if (module.type === 'piano') { ... }
-
-// ✅ Sempre: usar constants.js
-import { DISCIPLINES } from '../../lib/constants';
-```
-
----
-
-## Git
-
-```
-feat: adiciona registro de aula
-fix: corrige filtro de alunos inativos
-refactor: extrai lógica de Khan para hook
-docs: atualiza README com instrução de deploy
-```
-
-Branches:
-- `main` → produção (protegida)
-- `dev` → integração
-- `feat/nome-da-feature` → desenvolvimento
+Usar Commits Semânticos:
+- `feat:` Novas funcionalidades.
+- `fix:` Resolução de bugs.
+- `security:` Alterações críticas de segurança ou RLS.
+- `docs:` Criação ou ajuste de documentações.
+- `refactor:` Ajustes de código estruturais sem alteração lógica.

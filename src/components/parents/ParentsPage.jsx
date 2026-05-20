@@ -1,6 +1,8 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { parents as parentsApi } from '../../lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { parents as parentsApi } from '@/lib/api';
 import { DisciplineBadge } from '../shared/Badge';
 import { Loading, EmptyState } from '../shared/Loading';
 import { format } from 'date-fns';
@@ -23,90 +25,122 @@ export function ParentsPage() {
   }, [user]);
 
   if (loading) return <Loading />;
-  if (children.length === 0) return (
-    <EmptyState icon="👨‍👩‍👧" title="Nenhum filho vinculado" description="Peça ao professor para vincular seu filho à sua conta." />
-  );
+  
+  if (children.length === 0) {
+    return (
+      <EmptyState
+        icon="👨‍👩‍👧"
+        title="Nenhum filho vinculado"
+        description="Peça ao professor para vincular seu filho à sua conta."
+      />
+    );
+  }
 
   const s = selected;
-  const lastClass = s?.classes?.sort((a,b) => new Date(b.date)-new Date(a.date))[0];
+  const lastClass = s?.classes?.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
   return (
-    <div style={{ maxWidth:640, margin:'0 auto' }}>
-      <div style={{ marginBottom:24 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.5px' }}>Portal dos Pais</h1>
+    <div className="max-w-2xl mx-auto w-full animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Portal dos Pais</h1>
         {children.length > 1 && (
-          <div style={{ display:'flex', gap:8, marginTop:12 }}>
-            {children.map(c => (
-              <button key={c.id} onClick={()=>setSelected(c)}
-                style={{ padding:'6px 14px', borderRadius:20, border:'2px solid', cursor:'pointer', fontFamily:'inherit', fontSize:13,
-                  borderColor: selected?.id===c.id ? 'var(--text)' : 'var(--border)',
-                  background: selected?.id===c.id ? 'var(--text)' : 'transparent',
-                  color: selected?.id===c.id ? '#fff' : 'var(--text-2)' }}>
-                {c.name}
-              </button>
-            ))}
+          <div className="flex gap-2 mt-3 select-none">
+            {children.map(c => {
+              const isSelected = selected?.id === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelected(c)}
+                  className={`px-4 py-1.5 rounded-full border-2 text-xs font-semibold cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'border-text bg-text text-bg'
+                      : 'border-border bg-transparent text-text-2 hover:border-text-3'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
       {s && (
-        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+        <div className="flex flex-col gap-4">
           {/* Student info */}
-          <div style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:20, display:'flex', gap:14, alignItems:'center' }}>
-            <div style={{ width:56, height:56, borderRadius:'50%', background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:22 }}>
+          <div className="bg-surface rounded-xl border border-border p-5 flex gap-4 items-center flex-col sm:flex-row">
+            <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center font-bold text-2xl text-text shrink-0 select-none">
               {s.name?.charAt(0).toUpperCase()}
             </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontWeight:700, fontSize:16 }}>{s.name}</div>
-              <div style={{ fontSize:13, color:'var(--text-3)' }}>{s.age && `${s.age} anos`}{s.school && ` · ${s.school}`}</div>
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <div className="font-bold text-base text-text">{s.name}</div>
+              <div className="text-xs text-text-3 mt-0.5">
+                {s.age && `${s.age} anos`}{s.school && ` · ${s.school}`}
+              </div>
             </div>
-            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {(s.modules||[]).map(m => <DisciplineBadge key={m.id} discipline={m.discipline} />)}
+            <div className="flex gap-1.5 flex-wrap justify-center sm:justify-start shrink-0">
+              {(s.modules || []).map(m => (
+                <DisciplineBadge key={m.id} discipline={m.discipline} />
+              ))}
             </div>
           </div>
 
           {/* Last class */}
           {lastClass ? (
-            <div style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:20 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-3)', marginBottom:12, textTransform:'uppercase', letterSpacing:1 }}>Última Aula</div>
-              <div style={{ fontSize:12, color:'var(--text-3)', marginBottom:8 }}>
+            <div className="bg-surface rounded-xl border border-border p-5">
+              <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-3 select-none">
+                Última Aula
+              </div>
+              <div className="text-xs text-text-3 mb-2 font-medium capitalize">
                 {format(new Date(lastClass.date), "EEEE, d 'de' MMMM", { locale: ptBR })}
               </div>
-              <p style={{ fontSize:14, lineHeight:1.6 }}>{lastClass.content || 'Sem descrição'}</p>
+              <p className="text-sm leading-relaxed text-text-2">{lastClass.content || 'Sem descrição'}</p>
+              
               {lastClass.pending && (
-                <div style={{ marginTop:12, padding:12, borderRadius:8, background:'#FFFBEB', borderLeft:'3px solid #F59E0B' }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:'#F59E0B', marginBottom:4 }}>TAREFA / PENDÊNCIA</div>
-                  <div style={{ fontSize:13 }}>{lastClass.pending}</div>
+                <div className="mt-3 p-3 rounded-lg bg-warning-bg/40 border-l-4 border-warning">
+                  <div className="text-[10px] font-bold text-warning tracking-wider mb-1 select-none">
+                    TAREFA / PENDÊNCIA
+                  </div>
+                  <div className="text-sm text-text">{lastClass.pending}</div>
                 </div>
               )}
               {lastClass.next_step && (
-                <div style={{ marginTop:8, padding:12, borderRadius:8, background:'#ECFDF5', borderLeft:'3px solid #10B981' }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:'#10B981', marginBottom:4 }}>PRÓXIMA AULA</div>
-                  <div style={{ fontSize:13 }}>{lastClass.next_step}</div>
+                <div className="mt-2.5 p-3 rounded-lg bg-success-bg/40 border-l-4 border-success">
+                  <div className="text-[10px] font-bold text-success tracking-wider mb-1 select-none">
+                    PRÓXIMA AULA
+                  </div>
+                  <div className="text-sm text-text">{lastClass.next_step}</div>
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:20 }}>
-              <p style={{ color:'var(--text-3)' }}>Nenhuma aula registrada ainda.</p>
+            <div className="bg-surface rounded-xl border border-border p-5">
+              <p className="text-text-3 text-sm">Nenhuma aula registrada ainda.</p>
             </div>
           )}
 
           {/* Progress */}
-          {(s.progress||[]).length > 0 && (
-            <div style={{ background:'var(--surface)', borderRadius:12, border:'1px solid var(--border)', padding:20 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-3)', marginBottom:12, textTransform:'uppercase', letterSpacing:1 }}>Progresso por Disciplina</div>
-              {(s.progress||[]).map(p => (
-                <div key={p.id} style={{ marginBottom:12 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                    <DisciplineBadge discipline={p.discipline} />
-                    <span style={{ fontSize:12, fontWeight:600 }}>{p.percent||0}%</span>
+          {(s.progress || []).length > 0 && (
+            <div className="bg-surface rounded-xl border border-border p-5">
+              <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-3 select-none">
+                Progresso por Disciplina
+              </div>
+              <div className="flex flex-col gap-4">
+                {(s.progress || []).map(p => (
+                  <div key={p.id} className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center mb-1 select-none">
+                      <DisciplineBadge discipline={p.discipline} />
+                      <span className="text-xs font-semibold text-text">{p.percent || 0}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden w-full">
+                      <div
+                        className="h-full rounded-full bg-text transition-all duration-500"
+                        style={{ width: `${p.percent || 0}%` }}
+                      />
+                    </div>
                   </div>
-                  <div style={{ height:6, borderRadius:3, background:'var(--surface-2)' }}>
-                    <div style={{ height:'100%', borderRadius:3, background:'var(--text)', width:(p.percent||0)+'%' }} />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

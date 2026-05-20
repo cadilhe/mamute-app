@@ -1,18 +1,18 @@
-export function Loading({ text='Carregando...' }) {
+export function Loading({ text = 'Carregando...' }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:48, color:'var(--text-3)', gap:10 }}>
-      <div style={{ width:16, height:16, border:'2px solid var(--border)', borderTopColor:'var(--text)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
-      {text}
-      <style>{'@keyframes spin { to { transform: rotate(360deg); }}'}</style>
+    <div className="flex items-center justify-center p-12 text-text-3 gap-2.5 select-none">
+      <div className="w-4 h-4 border-2 border-border border-t-text rounded-full animate-spin" />
+      <span className="text-sm font-medium">{text}</span>
     </div>
   );
 }
-export function EmptyState({ icon, title, description }) {
+
+export function EmptyState({ icon, title, description, className = '' }) {
   return (
-    <div style={{ textAlign:'center', padding:48, color:'var(--text-3)' }}>
-      <div style={{ fontSize:40, marginBottom:12 }}>{icon||'📭'}</div>
-      <div style={{ fontWeight:600, color:'var(--text-2)', marginBottom:4 }}>{title}</div>
-      {description && <div style={{ fontSize:13 }}>{description}</div>}
+    <div className={`text-center p-12 text-text-3 select-none ${className}`}>
+      <div className="text-4xl mb-3">{icon || '📭'}</div>
+      <div className="font-semibold text-text-2 mb-1">{title}</div>
+      {description && <div className="text-xs">{description}</div>}
     </div>
   );
 }

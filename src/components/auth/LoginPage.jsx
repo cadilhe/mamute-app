@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 
@@ -20,22 +22,41 @@ export function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div style={{ width:'100%', maxWidth:400 }}>
-        <div style={{ marginBottom:32, textAlign:'center' }}>
-          <div style={{ fontWeight:700, fontSize:28, letterSpacing:'-1px', marginBottom:4 }}>MAMUTE</div>
-          <div style={{ color:'var(--text-3)', fontSize:14 }}>Sistema de Gestão de Ensino</div>
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center select-none">
+          <div className="font-bold text-3xl tracking-tight text-text mb-1">MAMUTE</div>
+          <div className="text-xs text-text-3 font-medium">Sistema de Gestão de Ensino</div>
         </div>
-        <div style={{ background:'var(--surface)', borderRadius:16, padding:32, border:'1px solid var(--border)', boxShadow:'var(--shadow-md)' }}>
-          <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <Input label="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required />
-            <Input label="Senha" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required />
+        <div className="bg-surface rounded-2xl p-8 border border-border shadow-md">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+            />
+            <Input
+              label="Senha"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
             {error && (
-              <div style={{ padding:'10px 12px', borderRadius:8, background:'#FEF2F2', color:'#EF4444', fontSize:13 }}>
+              <div className="p-3 rounded-lg bg-danger-bg/40 border border-danger/30 text-danger text-xs font-medium">
                 {error}
               </div>
             )}
-            <Button type="submit" size="lg" disabled={loading} style={{ width:'100%', justifyContent:'center', marginTop:4 }}>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={loading}
+              className="w-full mt-1.5 justify-center flex"
+            >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
