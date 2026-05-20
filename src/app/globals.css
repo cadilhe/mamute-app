@@ -10,6 +10,7 @@
   --surface: #F4F1EC;     /* Creme/bege suave (Fundo de cards e da Sidebar) */
   --surface-2: #EBE7E0;   /* Creme intermediário (Itens ativos e botões secundários) */
   --border: #E4DFD5;      /* Linhas de borda sutilmente integradas ao bege */
+  --sidebar-w: 240px;     /* Largura da sidebar fixa */
   
   /* Cores de Texto */
   --text: #0C0C0D;        /* Preto profundo (Alto contraste para títulos) */
