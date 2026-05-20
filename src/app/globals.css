@@ -6,41 +6,59 @@
 
 :root {
   /* Cores de Fundo e Estrutura */
-  --bg: #FAF8F5;          /* Off-white areia suave (Fundo principal do app) */
-  --surface: #F4F1EC;     /* Creme/bege suave (Fundo de cards e da Sidebar) */
-  --surface-2: #EBE7E0;   /* Creme intermediário (Itens ativos e botões secundários) */
-  --border: #E4DFD5;      /* Linhas de borda sutilmente integradas ao bege */
-  --sidebar-w: 240px;     /* Largura da sidebar fixa */
-  
+  --bg: #FAF8F5;
+  /* Off-white areia suave (Fundo principal do app) */
+  --surface: #F4F1EC;
+  /* Creme/bege suave (Fundo de cards e da Sidebar) */
+  --surface-2: #EBE7E0;
+  /* Creme intermediário (Itens ativos e botões secundários) */
+  --border: #E4DFD5;
+  /* Linhas de borda sutilmente integradas ao bege */
+  --sidebar-w: 240px;
+  /* Largura da sidebar fixa */
+
   /* Cores de Texto */
-  --text: #0C0C0D;        /* Preto profundo (Alto contraste para títulos) */
-  --text-2: #4F4F5A;      /* Cinza escuro quente (Textos principais e labels) */
-  --text-3: #83838E;      /* Cinza médio quente (Subtítulos e infos discretas) */
+  --text: #0C0C0D;
+  /* Preto profundo (Alto contraste para títulos) */
+  --text-2: #4F4F5A;
+  /* Cinza escuro quente (Textos principais e labels) */
+  --text-3: #83838E;
+  /* Cinza médio quente (Subtítulos e infos discretas) */
 
   /* Disciplinas em tons pastéis suaves */
-  --piano: #3B82F6;       /* Azul */
+  --piano: #3B82F6;
+  /* Azul */
   --piano-bg: #E1EBFF;
-  --robotica: #10B981;    /* Verde */
+  --robotica: #10B981;
+  /* Verde */
   --robotica-bg: #D6F5E9;
-  --matematica: #F59E0B;  /* Laranja/Amarelo */
+  --matematica: #F59E0B;
+  /* Laranja/Amarelo */
   --matematica-bg: #FFF3C4;
-  --ingles: #8B5CF6;      /* Roxo */
+  --ingles: #8B5CF6;
+  /* Roxo */
   --ingles-bg: #EFEAFF;
-  --bateria: #EC4899;     /* Rosa */
+  --bateria: #EC4899;
+  /* Rosa */
   --bateria-bg: #FCE6F1;
-  --reforco: #F97316;     /* Laranja Escuro */
+  --reforco: #F97316;
+  /* Laranja Escuro */
   --reforco-bg: #FFEAD8;
 
   /* Alertas em tons claros pastéis */
-  --danger: #DC2626;      /* Vermelho */
+  --danger: #DC2626;
+  /* Vermelho */
   --danger-bg: #FEE2E2;
-  --warning: #D97706;     /* Laranja */
+  --warning: #D97706;
+  /* Laranja */
   --warning-bg: #FEF3C7;
-  --success: #16A34A;     /* Verde */
+  --success: #16A34A;
+  /* Verde */
   --success-bg: #DCFCE7;
 
   /* Formas e Sombras */
-  --radius: 16px;         /* Cantos ligeiramente mais arredondados e elegantes */
+  --radius: 16px;
+  /* Cantos ligeiramente mais arredondados e elegantes */
   --radius-sm: 10px;
   --shadow: 0 1px 3px rgba(12, 12, 13, 0.03), 0 4px 12px rgba(12, 12, 13, 0.02);
   --shadow-md: 0 8px 24px rgba(12, 12, 13, 0.05);
@@ -61,7 +79,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: 'Syne', sans-serif;
 }
 
@@ -69,7 +90,9 @@ button {
   font-family: inherit;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
 }
 
@@ -83,13 +106,16 @@ a {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-3);
 }

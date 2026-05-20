@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudents } from '@/hooks/useStudents';
 import { classes as classesApi } from '@/lib/api';
-import { DISCIPLINES } from '@/lib/constants';
+import { useDisciplines } from '@/hooks/useDisciplines';
 import { DisciplineBadge } from '../shared/Badge';
 import { Card } from '../shared/Card';
 import { Loading } from '../shared/Loading';
@@ -30,12 +30,12 @@ export function Dashboard() {
     classesApi.listToday().then(({ data }) => setTodayClasses(data || []));
   }, []);
 
-  if (loading) return <Loading />;
+  const { disciplines: discMap } = useDisciplines();
 
   const today = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
-  const disciplines = {};
+  const discCounts = {};
   students.forEach(s => (s.modules || []).forEach(m => {
-    disciplines[m.discipline] = (disciplines[m.discipline] || 0) + 1;
+    discCounts[m.discipline] = (discCounts[m.discipline] || 0) + 1;
   }));
 
   return (
@@ -49,7 +49,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <StatCard label="Alunos ativos" value={students.length} sub="total na plataforma" />
         <StatCard label="Aulas hoje" value={todayClasses.length} sub="registradas" colorClass="text-piano" />
-        <StatCard label="Disciplinas" value={Object.keys(disciplines).length} sub="em andamento" />
+        <StatCard label="Disciplinas" value={Object.keys(discCounts).length} sub="em andamento" />
       </div>
 
       {/* Aulas de Hoje e Disciplinas */}
@@ -86,8 +86,8 @@ export function Dashboard() {
         <Card>
           <h2 className="font-semibold text-sm mb-4 text-text">Alunos por Disciplina</h2>
           <div className="flex flex-col gap-4">
-            {Object.entries(disciplines).map(([disc, count]) => {
-              const d = DISCIPLINES[disc] || { label: disc, color: '#6b6860', bg: 'transparent' };
+            {Object.entries(discCounts).map(([disc, count]) => {
+              const d = (discMap && discMap[disc]) || { label: disc, color: '#6b6860', bg: 'transparent' };
               const pct = Math.round((count / students.length) * 100);
               return (
                 <div key={disc} className="flex flex-col gap-1">
@@ -107,7 +107,7 @@ export function Dashboard() {
                 </div>
               );
             })}
-            {Object.keys(disciplines).length === 0 && (
+            {Object.keys(discCounts).length === 0 && (
               <p className="text-text-3 text-xs">Nenhuma disciplina em andamento.</p>
             )}
           </div>

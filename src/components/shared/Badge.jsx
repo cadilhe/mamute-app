@@ -1,7 +1,10 @@
-import { DISCIPLINES } from '../../lib/constants';
+'use client';
+
+import { useDisciplines } from '../../hooks/useDisciplines';
 
 export function DisciplineBadge({ discipline, size = 'sm', className = '' }) {
-  const d = DISCIPLINES[discipline] || { label: discipline, color: '#6B7280', bg: 'transparent' };
+  const { disciplines } = useDisciplines();
+  const d = (disciplines && disciplines[discipline]) || { label: discipline, color: '#6B7280', bg: 'transparent' };
   
   const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-3 py-1';
   

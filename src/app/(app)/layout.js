@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { DisciplineProvider } from '@/hooks/useDisciplines';
 import { Sidebar } from '@/components/layout/Sidebar';
 
 export default function AppLayout({ children }) {
@@ -28,11 +29,13 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <div className="flex bg-bg min-h-screen w-full">
-      <Sidebar />
-      <main className="ml-[var(--sidebar-w)] flex-1 min-h-screen p-8 w-full max-w-7xl">
-        {children}
-      </main>
-    </div>
+    <DisciplineProvider>
+      <div className="flex bg-bg min-h-screen w-full">
+        <Sidebar />
+        <main className="ml-[var(--sidebar-w)] flex-1 min-h-screen p-8 w-full max-w-7xl">
+          {children}
+        </main>
+      </div>
+    </DisciplineProvider>
   );
 }

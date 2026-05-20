@@ -121,6 +121,31 @@ export const overview = {
       .order('days_since_last_class', { ascending: false }),
 };
 
+// ─── DISCIPLINES ──────────────────────────────────────────────────────────────
+export const disciplines = {
+  list: () =>
+    supabase
+      .from('disciplines')
+      .select('*')
+      .eq('active', true)
+      .order('label'),
+
+  listAll: () =>
+    supabase
+      .from('disciplines')
+      .select('*')
+      .order('label'),
+
+  create: (data) =>
+    supabase.from('disciplines').insert(data).select().single(),
+
+  update: (id, data) =>
+    supabase.from('disciplines').update(data).eq('id', id).select().single(),
+
+  remove: (id) =>
+    supabase.from('disciplines').update({ active: false }).eq('id', id),
+};
+
 // ─── REPORTS ─────────────────────────────────────────────────────────────────
 export const reports = {
   generate: (studentId, type, content) =>

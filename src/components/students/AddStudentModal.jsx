@@ -5,13 +5,14 @@ import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { students as studentsApi, modules as modulesApi } from '../../lib/api';
-import { DISCIPLINES } from '../../lib/constants';
+import { useDisciplines } from '../../hooks/useDisciplines';
 
 export function AddStudentModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({ name: '', age: '', school: '', parent_email: '' });
   const [selectedDisciplines, setSelectedDisciplines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { disciplines } = useDisciplines();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -52,7 +53,7 @@ export function AddStudentModal({ open, onClose, onSuccess }) {
       await modulesApi.create({
         student_id: student.id,
         discipline: disc,
-        name: DISCIPLINES[disc]?.label || disc,
+        name: disciplines[disc]?.label || disc,
       });
     }
 
@@ -97,7 +98,7 @@ export function AddStudentModal({ open, onClose, onSuccess }) {
         <div>
           <div className="text-xs font-semibold text-text-2 mb-2 select-none">Disciplinas *</div>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(DISCIPLINES).map(([key, d]) => {
+            {disciplines && Object.entries(disciplines).map(([key, d]) => {
               const isSelected = selectedDisciplines.includes(key);
               return (
                 <button

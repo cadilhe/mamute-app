@@ -1,3 +1,5 @@
+// Fallback: disciplines are now fetched from the database via useDisciplines() hook.
+// This constant is used only when the DB is empty/unreachable.
 export const DISCIPLINES = {
   piano: { label: 'Piano', color: '#3B82F6', bg: '#EFF6FF' },
   robotica: { label: 'Robótica', color: '#10B981', bg: '#ECFDF5' },

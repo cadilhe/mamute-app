@@ -9,6 +9,7 @@ const NAV = [
   { href: '/alunos', icon: '◈', label: 'Alunos' },
   { href: '/agenda', icon: '◎', label: 'Agenda' },
   { href: '/visao-geral', icon: '◉', label: 'Visão Geral', alert: true },
+  { href: '/disciplinas', icon: '◆', label: 'Disciplinas' },
 ];
 
 export function Sidebar() {
