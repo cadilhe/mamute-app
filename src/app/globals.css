@@ -5,38 +5,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg: #0f0f10;
-  --surface: #17171a;
-  --surface-2: #1e1e22;
-  --border: #2a2a30;
-  --text: #e8e8ed;
-  --text-2: #8888a0;
-  --text-3: #58586f;
+  /* Cores de Fundo e Estrutura */
+  --bg: #FAF8F5;          /* Off-white areia suave (Fundo principal do app) */
+  --surface: #F4F1EC;     /* Creme/bege suave (Fundo de cards e da Sidebar) */
+  --surface-2: #EBE7E0;   /* Creme intermediário (Itens ativos e botões secundários) */
+  --border: #E4DFD5;      /* Linhas de borda sutilmente integradas ao bege */
+  
+  /* Cores de Texto */
+  --text: #0C0C0D;        /* Preto profundo (Alto contraste para títulos) */
+  --text-2: #4F4F5A;      /* Cinza escuro quente (Textos principais e labels) */
+  --text-3: #83838E;      /* Cinza médio quente (Subtítulos e infos discretas) */
 
-  --piano: #3b82f6;
-  --piano-bg: #1a2540;
-  --robotica: #10b981;
-  --robotica-bg: #0f2a22;
-  --matematica: #f59e0b;
-  --matematica-bg: #2a1f0a;
-  --ingles: #8b5cf6;
-  --ingles-bg: #1e1530;
-  --bateria: #ec4899;
-  --bateria-bg: #2a1020;
-  --reforco: #f97316;
-  --reforco-bg: #2a1508;
+  /* Disciplinas em tons pastéis suaves */
+  --piano: #3B82F6;       /* Azul */
+  --piano-bg: #E1EBFF;
+  --robotica: #10B981;    /* Verde */
+  --robotica-bg: #D6F5E9;
+  --matematica: #F59E0B;  /* Laranja/Amarelo */
+  --matematica-bg: #FFF3C4;
+  --ingles: #8B5CF6;      /* Roxo */
+  --ingles-bg: #EFEAFF;
+  --bateria: #EC4899;     /* Rosa */
+  --bateria-bg: #FCE6F1;
+  --reforco: #F97316;     /* Laranja Escuro */
+  --reforco-bg: #FFEAD8;
 
-  --danger: #ef4444;
-  --danger-bg: #2a1212;
-  --warning: #eab308;
-  --warning-bg: #2a2010;
-  --success: #22c55e;
-  --success-bg: #0f2a1a;
+  /* Alertas em tons claros pastéis */
+  --danger: #DC2626;      /* Vermelho */
+  --danger-bg: #FEE2E2;
+  --warning: #D97706;     /* Laranja */
+  --warning-bg: #FEF3C7;
+  --success: #16A34A;     /* Verde */
+  --success-bg: #DCFCE7;
 
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  /* Formas e Sombras */
+  --radius: 16px;         /* Cantos ligeiramente mais arredondados e elegantes */
+  --radius-sm: 10px;
+  --shadow: 0 1px 3px rgba(12, 12, 13, 0.03), 0 4px 12px rgba(12, 12, 13, 0.02);
+  --shadow-md: 0 8px 24px rgba(12, 12, 13, 0.05);
 }
 
 * {
