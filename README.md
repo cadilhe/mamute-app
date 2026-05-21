@@ -1,8 +1,11 @@
 # MAMUTE — Sistema de Gestão de Ensino
 
 ## Stack
+- **Framework**: Next.js 14+ (App Router)
 - **Frontend**: React 18
 - **Backend/DB**: Supabase (PostgreSQL + Auth + RLS)
+- **Estilização**: Tailwind CSS v3
+- **Gerenciador de Pacotes**: `pnpm`
 - **Deploy**: Vercel
 
 ## Setup rápido
@@ -10,54 +13,59 @@
 ### 1. Configure as variáveis de ambiente
 Crie um arquivo `.env` na raiz do projeto:
 ```
-REACT_APP_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=sua-anon-key-aqui
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
 ```
 
 ### 2. Instale as dependências
 ```bash
-npm install
+pnpm install
 ```
 
-### 3. Rode o projeto
+### 3. Rode o projeto em desenvolvimento
 ```bash
-npm start
+pnpm dev
 ```
 Acesse: http://localhost:3000
 
 ## Estrutura do projeto
 ```
 src/
+  app/
+    (app)/         # Rotas privadas protegidas por autenticação
+    (auth)/        # Rota de login pública
+    globals.css    # Importações do Tailwind + Design tokens CSS
+    layout.js      # Layout raiz do Next.js
+    providers.js   # Wrapper do Provedor de Autenticação
   components/
     auth/          # Login
-    layout/        # Sidebar + Layout
-    dashboard/     # Tela inicial
-    students/      # Lista + Detalhe + Cadastro de aulas
+    layout/        # Sidebar + Componentes estruturais
+    dashboard/     # Painel inicial
+    students/      # Lista + Detalhe do aluno + Registro de aulas (com abas de controle segmentado)
     schedule/      # Agenda semanal
-    overview/      # Visão geral com alertas
-    khan/          # Integração Khan Academy
-    reports/       # Modal de relatório + impressão
-    parents/       # Portal dos responsáveis
-    shared/        # Badge, Button, Card, Input, Modal, Loading
+    overview/      # Visão geral de acompanhamento com alertas
+    khan/          # Integração e abas da Khan Academy
+    reports/       # Modais de relatórios e impressão de PDF
+    shared/        # Componentes reutilizáveis (Badge, Button, Card, Input, Loading)
   hooks/
-    useAuth.js     # Autenticação
-    useStudents.js # Dados de alunos
-    useClasses.js  # Dados de aulas
+    useAuth.js     # Hook e contexto de autenticação
+    useStudents.js # Hook para dados de alunos
+    useClasses.js  # Hook para dados de aulas
+    useDisciplines.js # Hook para contexto de disciplinas
   lib/
-    supabase.js    # Cliente Supabase
-    api.js         # Todas as queries ao banco
-    constants.js   # Disciplinas, cores, configurações
-  styles/
-    globals.css    # Design tokens + estilos base
-  App.js           # Router principal
-  index.js         # Entry point
+    supabase.js    # Cliente singleton do Supabase
+    api.js         # Centralização de queries ao banco de dados (api.js)
 ```
 
 ## Deploy no Vercel
-1. Suba o projeto para um repositório GitHub
-2. Acesse vercel.com e importe o repositório
-3. Configure as variáveis de ambiente no painel do Vercel
-4. Deploy automático a cada push
+1. Suba o projeto para um repositório GitHub.
+2. Acesse [vercel.com](https://vercel.com) e importe o repositório.
+3. O preset do framework será detectado automaticamente como **Next.js**.
+4. Em Environment Variables, configure:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Clique em Deploy.
+
 
 ## Primeiro usuário (professor)
 No painel do Supabase:

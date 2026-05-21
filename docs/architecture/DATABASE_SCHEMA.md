@@ -238,6 +238,7 @@ ORDER BY c.student_id, c.module_id, c.date DESC;
 
 ```sql
 -- Habilitar RLS em todas as tabelas
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
@@ -249,23 +250,141 @@ ALTER TABLE khan_topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE khan_subtopics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
--- Professor vê tudo
+-- 1. PROFILES (Permite a leitura geral para usuários autenticados e edição apenas do próprio)
+CREATE POLICY "profiles_select" ON profiles
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY "profiles_update" ON profiles
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = id);
+
+-- 2. STUDENTS
 CREATE POLICY "teacher_all" ON students
   FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
 
--- Responsável vê só filhos vinculados
 CREATE POLICY "parent_own_children" ON students
   FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM parent_student ps
-      JOIN profiles p ON p.id = auth.uid()
-      WHERE ps.student_id = students.id
-        AND ps.parent_id = auth.uid()
-        AND p.role = 'parent'
-    )
-  );
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = students.id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
 
--- Repetir padrão acima para: modules, classes, progress, khan_profiles, khan_topics, khan_subtopics
+-- 3. MODULES
+CREATE POLICY "teacher_all" ON modules
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_modules" ON modules
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = modules.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 4. CLASSES
+CREATE POLICY "teacher_all" ON classes
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_classes" ON classes
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = classes.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 5. PROGRESS
+CREATE POLICY "teacher_all" ON progress
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_progress" ON progress
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = progress.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 6. SCHEDULES
+CREATE POLICY "teacher_all" ON schedules
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_schedules" ON schedules
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = schedules.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 7. PARENT_STUDENT
+CREATE POLICY "teacher_all" ON parent_student
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_relationship" ON parent_student
+  FOR SELECT TO authenticated
+  USING (parent_id = auth.uid());
+
+-- 8. KHAN_PROFILES
+CREATE POLICY "teacher_all" ON khan_profiles
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_khan_profiles" ON khan_profiles
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = khan_profiles.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 9. KHAN_TOPICS
+CREATE POLICY "teacher_all" ON khan_topics
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_khan_topics" ON khan_topics
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM khan_profiles kp
+    JOIN parent_student ps ON ps.student_id = kp.student_id
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE kp.id = khan_topics.khan_profile_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 10. KHAN_SUBTOPICS
+CREATE POLICY "teacher_all" ON khan_subtopics
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_khan_subtopics" ON khan_subtopics
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM khan_topics kt
+    JOIN khan_profiles kp ON kp.id = kt.khan_profile_id
+    JOIN parent_student ps ON ps.student_id = kp.student_id
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE kt.id = khan_subtopics.khan_topic_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
+
+-- 11. REPORTS
+CREATE POLICY "teacher_all" ON reports
+  FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
+
+CREATE POLICY "parent_own_reports" ON reports
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM parent_student ps
+    JOIN profiles p ON p.id = auth.uid()
+    WHERE ps.student_id = reports.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
+  ));
 ```

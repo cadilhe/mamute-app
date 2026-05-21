@@ -153,8 +153,8 @@ Para aulas, `date` é do tipo `DATE` (apenas a data, sem hora).
 
 | Variável | Onde usar |
 |---|---|
-| `REACT_APP_SUPABASE_URL` | `src/lib/supabase.js` |
-| `REACT_APP_SUPABASE_ANON_KEY` | `src/lib/supabase.js` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `src/lib/supabase.js` |
 
 Arquivo `.env` na raiz do projeto (nunca commitar, está no `.gitignore`).  
 `.env.example` commitado com placeholders para onboarding.

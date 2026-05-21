@@ -171,29 +171,31 @@ export function AddStudentModal({ open, onClose, onSuccess }) {
 
 ## Navegação por Abas (Tabs)
 
-Padrão de tabs utilizando Tailwind CSS e estado reativo local:
+Padrão de abas moderno utilizando o conceito de Segmented Control (estilo iOS/macOS), implementado com Tailwind CSS e estado reativo local:
 ```jsx
 const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy'];
 const [tab, setTab] = useState('Hoje');
 
-// Render das tabs
-<div className="flex border-b border-border mb-5 overflow-x-auto select-none">
-  {TABS.map(t => (
-    <button
-      key={t}
-      onClick={() => setTab(t)}
-      className={`px-4.5 py-2.5 bg-transparent border-b-2 cursor-pointer text-sm transition-all -mb-px outline-none ${
-        tab === t
-          ? 'font-semibold text-text border-text'
-          : 'font-normal text-text-3 border-transparent hover:text-text-2'
-      }`}
-    >
-      {t}
-    </button>
-  ))}
+// Render do controle segmentado de abas
+<div className="flex mb-6 overflow-x-auto select-none no-scrollbar">
+  <div className="inline-flex flex-nowrap gap-1 bg-surface-2 p-1 rounded-xl border border-border">
+    {TABS.map(t => (
+      <button
+        key={t}
+        onClick={() => setTab(t)}
+        className={`px-5 py-2 rounded-lg cursor-pointer text-xs font-semibold tracking-wide transition-all duration-200 border-none outline-none whitespace-nowrap ${
+          tab === t
+            ? 'bg-bg text-text shadow-sm font-bold'
+            : 'text-text-3 hover:text-text-2 hover:bg-surface/50'
+        }`}
+      >
+        {t}
+      </button>
+    ))}
+  </div>
 </div>
 
-// Render condicional
+// Render condicional do conteúdo da aba
 {tab === 'Hoje' && <TodayTab student={student} />}
 {tab === 'Histórico' && <HistoryTab studentId={student.id} />}
 ```
