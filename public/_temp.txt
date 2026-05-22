@@ -4,6 +4,6 @@
  [x] cadastrar horário na agenda, 
  [x] atualizar progresso, 
  [x] configurar Khan Academy
-
 [x] Usuários: Professor (admin total) 
-[x] Responsável (portal view-only do filho)
+
+[ ] Responsável (portal view-only do filho)

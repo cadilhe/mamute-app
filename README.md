@@ -1,5 +1,13 @@
 # MAMUTE — Sistema de Gestão de Ensino
 
+O projeto MAMUTE é um sistema de gestão educacional para professores autônomos que permite gerenciar alunos, aulas, progresso e comunicação com responsáveis. O sistema tem funcionalidades para registro de aulas, acompanhamento de pendências, portal para pais e integração com Khan Academy.
+
+A stack tecnológica utiliza Next.js 14 com App Router, Supabase como backend com PostgreSQL e autenticação, Tailwind CSS para estilização e date-fns para manipulação de datas. A arquitetura segue princípios de segurança com Row Level Security (RLS) no banco de dados e autenticação baseada em perfis com diferentes níveis de acesso (professor e pai/responsável).
+
+O sistema inclui módulos para gerenciamento de alunos, disciplinas, registros de aulas, progresso, agendamento e integração com Khan Academy. A estrutura de banco de dados é bem definida com tabelas para estudantes, módulos, aulas, progresso, agendamento e perfis Khan Academy, além de relações entre pais e estudantes.
+
+O código segue regras específicas de nomenclatura, estrutura de arquivos e convenções de desenvolvimento detalhadas na documentação do projeto.
+
 ## Stack
 - **Framework**: Next.js 14+ (App Router)
 - **Frontend**: React 18
