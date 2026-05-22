@@ -8,7 +8,8 @@ import { progress as progressApi, parents as parentsApi } from '../../lib/api';
 import { DisciplineBadge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { Card } from '../shared/Card';
-import { Loading } from '../shared/Loading';
+import { Loading, EmptyState } from '../shared/Loading';
+import { useToast } from '../shared/Toast';
 import { RegisterClassModal } from './RegisterClassModal';
 import { EditStudentModal } from './EditStudentModal';
 import { EditClassModal } from './EditClassModal';
@@ -24,18 +25,21 @@ function ProgressCard({ studentId, discipline, existingPercent, existingNotes })
   const [percent, setPercent] = useState(existingPercent || 0);
   const [notes, setNotes] = useState(existingNotes || '');
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   const clamp = (v) => Math.min(100, Math.max(0, v));
 
   const handleSavePercent = async () => {
     setSaving(true);
-    await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    const { error: err } = await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    if (err) toast.error(err.message);
     setSaving(false);
   };
 
   const handleSaveNotes = async () => {
     setSaving(true);
-    await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    const { error: err } = await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    if (err) toast.error(err.message);
     setSaving(false);
   };
 
@@ -95,8 +99,8 @@ export function StudentDetail() {
 
   const fetchParents = useCallback(async () => {
     if (!id) return;
-    const { data } = await parentsApi.getByStudent(id);
-    setLinkedParents(data || []);
+    const { data, error: err } = await parentsApi.getByStudent(id);
+    if (!err) setLinkedParents(data || []);
   }, [id]);
 
   useEffect(() => { fetchParents(); }, [fetchParents]);
@@ -151,8 +155,8 @@ export function StudentDetail() {
               {lp.profiles?.full_name || 'Responsável'}
               <button
                 onClick={async () => {
-                  await parentsApi.unlink(lp.parent_id, student.id);
-                  fetchParents();
+                  const { error: err } = await parentsApi.unlink(lp.parent_id, student.id);
+                  if (!err) fetchParents();
                 }}
                 className="bg-transparent border-none cursor-pointer text-text-3 hover:text-danger text-sm leading-none select-none"
               >
@@ -214,7 +218,7 @@ export function StudentDetail() {
             </Card>
           ) : (
             <Card>
-              <p className="text-text-3 text-sm">Nenhuma aula registrada ainda.</p>
+              <EmptyState icon="📝" title="Nenhuma aula registrada" description="Registre a primeira aula deste aluno." />
             </Card>
           )}
         </div>
@@ -224,9 +228,7 @@ export function StudentDetail() {
       {tab === 'Histórico' && (
         <div className="flex flex-col gap-2.5">
           {classHistory.length === 0 ? (
-            <p className="text-text-3 text-sm p-6 text-center bg-surface rounded-xl border border-border">
-              Nenhuma aula registrada.
-            </p>
+            <EmptyState icon="📋" title="Nenhuma aula registrada" description="O histórico de aulas aparecerá aqui." />
           ) : (
             classHistory.map(c => (
               <Card key={c.id} className="px-5 py-3.5">
@@ -254,7 +256,7 @@ export function StudentDetail() {
       {tab === 'Progresso' && (
         <div className="flex flex-col gap-3">
           {(student.modules || []).length === 0 ? (
-            <p className="text-text-3 text-sm">Nenhuma disciplina cadastrada.</p>
+            <EmptyState icon="📊" title="Nenhuma disciplina cadastrada" description="Edite o aluno para adicionar disciplinas." />
           ) : (
             (student.modules || []).map(m => {
               const p = (student.progress || []).find(pr => pr.discipline === m.discipline);

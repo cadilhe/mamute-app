@@ -9,9 +9,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error: sessionErr }) => {
+      if (sessionErr) {
+        setError(sessionErr.message);
+        setLoading(false);
+        return;
+      }
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setLoading(false);
@@ -28,12 +34,17 @@ export function AuthProvider({ children }) {
 
   const fetchProfile = async (userId) => {
     try {
-      const { data } = await supabase
+      const { data, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      if (profileErr) {
+        setError(profileErr.message);
+      }
       setProfile(data);
+    } catch (e) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +58,7 @@ export function AuthProvider({ children }) {
   const signOut = () => supabase.auth.signOut();
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, error, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

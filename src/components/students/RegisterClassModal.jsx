@@ -5,6 +5,7 @@ import { Modal } from '../shared/Modal';
 import { Textarea, Select } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { classes as classesApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 import { format } from 'date-fns';
 
 export function RegisterClassModal({ open, onClose, student, onSuccess }) {
@@ -13,13 +14,14 @@ export function RegisterClassModal({ open, onClose, student, onSuccess }) {
   const [pending, setPending] = useState('');
   const [nextStep, setNextStep] = useState('');
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   const modules = student?.modules || [];
 
   const handleSubmit = async () => {
     if (!moduleId) return;
     setLoading(true);
-    await classesApi.create({
+    const { error: err } = await classesApi.create({
       student_id: student.id,
       module_id: moduleId,
       date: format(new Date(), 'yyyy-MM-dd'),
@@ -27,11 +29,17 @@ export function RegisterClassModal({ open, onClose, student, onSuccess }) {
       pending,
       next_step: nextStep,
     });
+    if (err) {
+      toast.error(err.message);
+      setLoading(false);
+      return;
+    }
     setContent('');
     setPending('');
     setNextStep('');
     setModuleId('');
     setLoading(false);
+    toast.success('Aula registrada com sucesso');
     onSuccess();
   };
 

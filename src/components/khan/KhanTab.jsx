@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { khan as khanApi } from '@/lib/api';
-import { Loading } from '../shared/Loading';
+import { Loading, ErrorState } from '../shared/Loading';
 import { Button } from '../shared/Button';
 import { KHAN_BASE_URL } from '@/lib/constants';
 import { KhanSetupModal } from './KhanSetupModal';
@@ -11,19 +11,27 @@ import { AddTopicModal } from './AddTopicModal';
 export function KhanTab({ studentId }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showSetup, setShowSetup] = useState(false);
   const [showAddTopic, setShowAddTopic] = useState(false);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await khanApi.getProfile(studentId);
-    setProfile(data);
+    setError(null);
+    const { data, error: err } = await khanApi.getProfile(studentId);
+    if (err) {
+      setError(err.message);
+      setProfile(null);
+    } else {
+      setProfile(data);
+    }
     setLoading(false);
   }, [studentId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} onRetry={fetch} />;
 
   if (!profile) {
     return (

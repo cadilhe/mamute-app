@@ -4,22 +4,33 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { overview as overviewApi } from '@/lib/api';
 import { AlertBadge } from '../shared/Badge';
-import { Loading, EmptyState } from '../shared/Loading';
+import { Loading, EmptyState, ErrorState } from '../shared/Loading';
 
 export function OverviewPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const router = useRouter();
 
-  useEffect(() => {
-    overviewApi.getAll().then(({ data: d }) => {
-      setData(d || []);
+  const fetch = () => {
+    setLoading(true);
+    setError(null);
+    overviewApi.getAll().then(({ data: d, error: err }) => {
+      if (err) {
+        setError(err.message);
+        setData([]);
+      } else {
+        setData(d || []);
+      }
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(() => { fetch(); }, []);
 
   if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} onRetry={fetch} />;
 
   const danger = data.filter(s => s.days_since_last_class >= 14);
   const warning = data.filter(s => s.days_since_last_class < 14 && s.pending_count >= 2);

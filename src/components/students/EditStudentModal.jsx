@@ -6,6 +6,7 @@ import { Input, Textarea } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { students as studentsApi, modules as modulesApi } from '../../lib/api';
 import { useDisciplines } from '../../hooks/useDisciplines';
+import { useToast } from '../shared/Toast';
 
 export function EditStudentModal({ open, onClose, student, onSuccess }) {
   const [form, setForm] = useState({ name: '', age: '', school: '', parent_email: '', notes: '' });
@@ -13,6 +14,7 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { disciplines } = useDisciplines();
+  const toast = useToast();
 
   useEffect(() => {
     if (open && student) {
@@ -41,6 +43,14 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
       setError('Nome é obrigatório');
       return;
     }
+    if (form.age && (isNaN(form.age) || parseInt(form.age) < 1)) {
+      setError('Idade deve ser um número positivo');
+      return;
+    }
+    if (form.parent_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parent_email)) {
+      setError('Email do responsável inválido');
+      return;
+    }
     if (selectedDisciplines.length === 0) {
       setError('Selecione ao menos uma disciplina');
       return;
@@ -57,7 +67,7 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
     });
 
     if (err) {
-      setError(err.message);
+      toast.error(err.message);
       setLoading(false);
       return;
     }
@@ -69,19 +79,27 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
     const toRemove = existingModules.filter(m => !selectedDisciplines.includes(m.discipline));
     const toAdd = selectedDisciplines.filter(d => !existingDisciplines.includes(d));
 
+    let syncError = false;
     for (const m of toRemove) {
-      await modulesApi.remove(m.id);
+      const { error: removeErr } = await modulesApi.remove(m.id);
+      if (removeErr) syncError = true;
     }
 
     for (const disc of toAdd) {
-      await modulesApi.create({
+      const { error: createErr } = await modulesApi.create({
         student_id: student.id,
         discipline: disc,
         name: disciplines[disc]?.label || disc,
       });
+      if (createErr) syncError = true;
     }
 
     setLoading(false);
+    if (syncError) {
+      toast.warning('Aluno salvo, mas algumas disciplinas não foram sincronizadas.');
+    } else {
+      toast.success('Aluno atualizado com sucesso');
+    }
     onSuccess();
   };
 

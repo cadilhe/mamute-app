@@ -16,3 +16,21 @@ export function EmptyState({ icon, title, description, className = '' }) {
     </div>
   );
 }
+
+export function ErrorState({ message, onRetry }) {
+  return (
+    <div className="text-center p-12 select-none">
+      <div className="text-4xl mb-3">⚠</div>
+      <div className="font-semibold text-danger mb-1">Erro ao carregar dados</div>
+      <div className="text-xs text-text-3 mb-4 max-w-md mx-auto">{message}</div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 rounded-lg bg-surface-2 border border-border text-text text-sm font-medium hover:bg-surface cursor-pointer transition-colors"
+        >
+          Tentar novamente
+        </button>
+      )}
+    </div>
+  );
+}

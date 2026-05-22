@@ -5,8 +5,10 @@ import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { khan as khanApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 
 export function KhanSetupModal({ open, onClose, studentId, profile, onSuccess }) {
+  const toast = useToast();
   const [username, setUsername] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
   const [streak, setStreak] = useState('');
@@ -29,6 +31,18 @@ export function KhanSetupModal({ open, onClose, studentId, profile, onSuccess })
       setError('Username é obrigatório');
       return;
     }
+    if (profileUrl && !/^https?:\/\/.+/.test(profileUrl)) {
+      setError('URL do perfil inválida (deve começar com http:// ou https://)');
+      return;
+    }
+    if (streak && (isNaN(streak) || parseInt(streak) < 0)) {
+      setError('Streak deve ser um número positivo');
+      return;
+    }
+    if (minutes && (isNaN(minutes) || parseInt(minutes) < 0)) {
+      setError('Minutos/semana deve ser um número positivo');
+      return;
+    }
     setLoading(true);
     setError('');
     const { error: err } = await khanApi.saveProfile({
@@ -39,11 +53,12 @@ export function KhanSetupModal({ open, onClose, studentId, profile, onSuccess })
       minutes_week: minutes ? parseInt(minutes) : 0,
     });
     if (err) {
-      setError(err.message);
+      toast.error(err.message);
       setLoading(false);
       return;
     }
     setLoading(false);
+    toast.success('Perfil Khan salvo com sucesso');
     onSuccess();
   };
 

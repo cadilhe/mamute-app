@@ -201,19 +201,23 @@ export const parents = {
       .eq('student_id', studentId),
 
   getByStudent: async (studentId) => {
-    const { data: links } = await supabase
+    const { data: links, error: linksErr } = await supabase
       .from('parent_student')
       .select('parent_id')
       .eq('student_id', studentId);
+
+    if (linksErr) return { data: [], error: linksErr };
 
     const parentIds = (links || []).map(l => l.parent_id);
 
     if (parentIds.length === 0) return { data: [] };
 
-    const { data: profilesData } = await supabase
+    const { data: profilesData, error: profilesErr } = await supabase
       .from('profiles')
       .select('id, full_name')
       .in('id', parentIds);
+
+    if (profilesErr) return { data: [], error: profilesErr };
 
     return {
       data: parentIds.map(pid => ({

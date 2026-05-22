@@ -7,7 +7,8 @@ import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { Card } from '../shared/Card';
-import { Loading } from '../shared/Loading';
+import { Loading, ErrorState, EmptyState } from '../shared/Loading';
+import { useToast } from '../shared/Toast';
 
 const PRESET_COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#F97316',
@@ -63,8 +64,10 @@ function DisciplineItem({ disc, onEdit, onToggle }) {
 
 export function DisciplinasPage() {
   const { refetch: refetchContext } = useDisciplines();
+  const toast = useToast();
   const [discs, setDiscs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ key: '', label: '', color: '#3B82F6', bg_color: '#EFF6FF' });
@@ -73,8 +76,14 @@ export function DisciplinasPage() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await disciplinesApi.listAll();
-    setDiscs(data || []);
+    setFetchError(null);
+    const { data, error: err } = await disciplinesApi.listAll();
+    if (err) {
+      setFetchError(err.message);
+      setDiscs([]);
+    } else {
+      setDiscs(data || []);
+    }
     setLoading(false);
   }, []);
 
@@ -103,7 +112,9 @@ export function DisciplinasPage() {
   };
 
   const handleToggle = async (disc) => {
-    await disciplinesApi.update(disc.id, { active: !disc.active });
+    const { error: err } = await disciplinesApi.update(disc.id, { active: !disc.active });
+    if (err) { toast.error(err.message); return; }
+    toast.success(disc.active ? 'Disciplina desativada' : 'Disciplina ativada');
     await refetchContext();
     fetch();
   };
@@ -134,19 +145,21 @@ export function DisciplinasPage() {
 
     if (editing) {
       const { error: err } = await disciplinesApi.update(editing.id, payload);
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) { toast.error(err.message); setSaving(false); return; }
     } else {
       const { error: err } = await disciplinesApi.create(payload);
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) { toast.error(err.message); setSaving(false); return; }
     }
 
     setSaving(false);
     setShowModal(false);
+    toast.success(editing ? 'Disciplina atualizada' : 'Disciplina criada com sucesso');
     await refetchContext();
     fetch();
   };
 
   if (loading) return <Loading />;
+  if (fetchError) return <ErrorState message={fetchError} onRetry={fetch} />;
 
   return (
     <div className="w-full animate-fade-in">
@@ -163,9 +176,7 @@ export function DisciplinasPage() {
           <DisciplineItem key={d.id} disc={d} onEdit={openEdit} onToggle={handleToggle} />
         ))}
         {discs.length === 0 && (
-          <Card>
-            <p className="text-text-3 text-sm text-center py-4">Nenhuma disciplina cadastrada.</p>
-          </Card>
+          <EmptyState icon="📚" title="Nenhuma disciplina cadastrada" description="Crie disciplinas para usar no sistema." />
         )}
       </div>
 

@@ -5,8 +5,10 @@ import { Modal } from '../shared/Modal';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { khan as khanApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 
 export function AddTopicModal({ open, onClose, khanProfileId, onSuccess }) {
+  const toast = useToast();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [progress, setProgress] = useState('');
@@ -41,6 +43,20 @@ export function AddTopicModal({ open, onClose, khanProfileId, onSuccess }) {
       setError('Nome do tópico é obrigatório');
       return;
     }
+    if (url && !/^https?:\/\/.+/.test(url)) {
+      setError('URL inválida (deve começar com http:// ou https://)');
+      return;
+    }
+    if (progress && (isNaN(progress) || parseInt(progress) < 0 || parseInt(progress) > 100)) {
+      setError('Progresso deve ser um número entre 0 e 100');
+      return;
+    }
+    for (const sub of subtopics) {
+      if (sub.url && !/^https?:\/\/.+/.test(sub.url)) {
+        setError(`URL do subtópico "${sub.name || 'sem nome'}" inválida`);
+        return;
+      }
+    }
     setLoading(true);
     setError('');
 
@@ -52,22 +68,29 @@ export function AddTopicModal({ open, onClose, khanProfileId, onSuccess }) {
     });
 
     if (topicErr) {
-      setError(topicErr.message);
+      toast.error(topicErr.message);
       setLoading(false);
       return;
     }
 
+    let subErrors = false;
     for (const sub of subtopics) {
       if (sub.name.trim()) {
-        await khanApi.addSubtopic({
+        const { error: subErr } = await khanApi.addSubtopic({
           khan_topic_id: topic.id,
           name: sub.name.trim(),
           url: sub.url || null,
         });
+        if (subErr) subErrors = true;
       }
     }
 
     setLoading(false);
+    if (subErrors) {
+      toast.warning('Alguns subtópicos não puderam ser salvos.');
+    } else {
+      toast.success('Tópico adicionado com sucesso');
+    }
     onSuccess();
   };
 

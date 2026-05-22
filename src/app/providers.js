@@ -1,11 +1,14 @@
 'use client';
 
 import { AuthProvider } from '@/hooks/useAuth';
+import { ToastProvider } from '@/components/shared/Toast';
 
 export function Providers({ children }) {
   return (
     <AuthProvider>
-      {children}
+      <ToastProvider>
+        {children}
+      </ToastProvider>
     </AuthProvider>
   );
 }

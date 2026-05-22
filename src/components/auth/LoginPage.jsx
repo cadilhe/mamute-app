@@ -4,20 +4,20 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '../shared/Input';
 import { Button } from '../shared/Button';
+import { useToast } from '../shared/Toast';
 
 export function LoginPage() {
   const { signIn } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     const { error: err } = await signIn(email, password);
-    if (err) setError(err.message);
+    if (err) toast.error(err.message);
     setLoading(false);
   };
 
@@ -46,11 +46,6 @@ export function LoginPage() {
               placeholder="••••••••"
               required
             />
-            {error && (
-              <div className="p-3 rounded-lg bg-danger-bg/40 border border-danger/30 text-danger text-xs font-medium">
-                {error}
-              </div>
-            )}
             <Button
               type="submit"
               size="lg"

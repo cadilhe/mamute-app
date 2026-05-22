@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { parents as parentsApi } from '@/lib/api';
 import { DisciplineBadge } from '../shared/Badge';
-import { Loading, EmptyState } from '../shared/Loading';
+import { Loading, EmptyState, ErrorState } from '../shared/Loading';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -13,18 +13,29 @@ export function ParentsPage() {
   const [children, setChildren] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetch = () => {
     if (!user) return;
-    parentsApi.getChildren(user.id).then(({ data }) => {
-      const kids = (data || []).map(d => d.students).filter(Boolean);
-      setChildren(kids);
-      if (kids.length > 0) setSelected(kids[0]);
+    setLoading(true);
+    setError(null);
+    parentsApi.getChildren(user.id).then(({ data, error: err }) => {
+      if (err) {
+        setError(err.message);
+        setChildren([]);
+      } else {
+        const kids = (data || []).map(d => d.students).filter(Boolean);
+        setChildren(kids);
+        if (kids.length > 0) setSelected(kids[0]);
+      }
       setLoading(false);
     });
-  }, [user]);
+  };
+
+  useEffect(() => { fetch(); }, [user]);
 
   if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} onRetry={fetch} />;
   
   if (children.length === 0) {
     return (
@@ -120,11 +131,13 @@ export function ParentsPage() {
           )}
 
           {/* Progress */}
-          {(s.progress || []).length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-5">
-              <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-3 select-none">
-                Progresso por Disciplina
-              </div>
+          <div className="bg-surface rounded-xl border border-border p-5">
+            <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-3 select-none">
+              Progresso por Disciplina
+            </div>
+            {(s.progress || []).length === 0 ? (
+              <p className="text-text-3 text-sm">Nenhum progresso registrado ainda.</p>
+            ) : (
               <div className="flex flex-col gap-4">
                 {(s.progress || []).map(p => (
                   <div key={p.id} className="flex flex-col gap-1.5">
@@ -141,8 +154,8 @@ export function ParentsPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

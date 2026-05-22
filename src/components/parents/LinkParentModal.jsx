@@ -5,13 +5,14 @@ import { Modal } from '../shared/Modal';
 import { Select } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { parents as parentsApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 
 export function LinkParentModal({ open, onClose, student, onSuccess }) {
+  const toast = useToast();
   const [parentList, setParentList] = useState([]);
   const [linkedParentIds, setLinkedParentIds] = useState(new Set());
   const [parentId, setParentId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (open && student) {
@@ -39,14 +40,15 @@ export function LinkParentModal({ open, onClose, student, onSuccess }) {
     const { error: err } = await parentsApi.link(parentId, student.id);
     if (err) {
       if (err.code === '23505') {
-        setError('Este responsável já está vinculado a este aluno.');
+        toast.error('Este responsável já está vinculado a este aluno.');
       } else {
-        setError(err.message);
+        toast.error(err.message);
       }
       setLoading(false);
       return;
     }
     setLoading(false);
+    toast.success('Responsável vinculado com sucesso');
     onSuccess();
   };
 

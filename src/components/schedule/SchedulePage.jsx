@@ -5,7 +5,7 @@ import { schedule as scheduleApi } from '@/lib/api';
 import { useStudents } from '@/hooks/useStudents';
 import { DisciplineBadge } from '../shared/Badge';
 import { Button } from '../shared/Button';
-import { Loading } from '../shared/Loading';
+import { Loading, ErrorState, EmptyState } from '../shared/Loading';
 import { AddScheduleModal } from './AddScheduleModal';
 
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -13,19 +13,52 @@ const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 export function SchedulePage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const { data: students } = useStudents();
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data: d } = await scheduleApi.list();
-    setData(d || []);
+    setError(null);
+    const { data: d, error: err } = await scheduleApi.list();
+    if (err) {
+      setError(err.message);
+      setData([]);
+    } else {
+      setData(d || []);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} onRetry={fetch} />;
+
+  if (data.length === 0) {
+    return (
+      <div className="w-full animate-fade-in">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
+            <p className="text-xs text-text-3 mt-0.5">Grade semanal de aulas</p>
+          </div>
+          <Button onClick={() => setShowAdd(true)}>+ Horário</Button>
+        </div>
+        <EmptyState
+          icon="📅"
+          title="Nenhum horário cadastrado"
+          description="Adicione horários semanais para organizar a grade de aulas."
+        />
+        <AddScheduleModal
+          open={showAdd}
+          onClose={() => setShowAdd(false)}
+          students={students}
+          onSuccess={() => { setShowAdd(false); fetch(); }}
+        />
+      </div>
+    );
+  }
 
   const byDay = {};
   DAYS.forEach((_, i) => {

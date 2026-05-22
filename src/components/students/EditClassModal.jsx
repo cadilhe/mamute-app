@@ -5,6 +5,7 @@ import { Modal } from '../shared/Modal';
 import { Textarea, Select } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { classes as classesApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -14,6 +15,7 @@ export function EditClassModal({ open, onClose, classItem, student, onSuccess })
   const [pending, setPending] = useState('');
   const [nextStep, setNextStep] = useState('');
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   const modules = student?.modules || [];
 
@@ -29,13 +31,19 @@ export function EditClassModal({ open, onClose, classItem, student, onSuccess })
   const handleSubmit = async () => {
     if (!moduleId) return;
     setLoading(true);
-    await classesApi.update(classItem.id, {
+    const { error: err } = await classesApi.update(classItem.id, {
       module_id: moduleId,
       content,
       pending,
       next_step: nextStep,
     });
+    if (err) {
+      toast.error(err.message);
+      setLoading(false);
+      return;
+    }
     setLoading(false);
+    toast.success('Aula atualizada com sucesso');
     onSuccess();
   };
 

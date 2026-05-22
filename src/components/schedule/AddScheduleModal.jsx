@@ -5,6 +5,7 @@ import { Modal } from '../shared/Modal';
 import { Input, Select } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { schedule as scheduleApi, modules as modulesApi } from '../../lib/api';
+import { useToast } from '../shared/Toast';
 
 const DAYS = [
   { value: 1, label: 'Segunda' },
@@ -16,6 +17,7 @@ const DAYS = [
 ];
 
 export function AddScheduleModal({ open, onClose, students, onSuccess }) {
+  const toast = useToast();
   const [studentId, setStudentId] = useState('');
   const [moduleId, setModuleId] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState('');
@@ -46,8 +48,12 @@ export function AddScheduleModal({ open, onClose, students, onSuccess }) {
     }
     setModulesLoading(true);
     setModuleId('');
-    modulesApi.listByStudent(studentId).then(({ data }) => {
-      setStudentModules(data || []);
+    modulesApi.listByStudent(studentId).then(({ data, error: err }) => {
+      if (err) {
+        setStudentModules([]);
+      } else {
+        setStudentModules(data || []);
+      }
       setModulesLoading(false);
     });
   }, [studentId]);
@@ -68,11 +74,12 @@ export function AddScheduleModal({ open, onClose, students, onSuccess }) {
       active: true,
     });
     if (err) {
-      setError(err.message);
+      toast.error(err.message);
       setLoading(false);
       return;
     }
     setLoading(false);
+    toast.success('Horário adicionado com sucesso');
     onSuccess();
   };
 

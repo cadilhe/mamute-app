@@ -8,7 +8,7 @@ import { useDisciplines } from '@/hooks/useDisciplines';
 import { DisciplineBadge } from '../shared/Badge';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
-import { Loading } from '../shared/Loading';
+import { Loading, ErrorState, EmptyState } from '../shared/Loading';
 import { LinkParentModal } from '../parents/LinkParentModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,20 +26,29 @@ function StatCard({ label, value, sub, colorClass }) {
 export function Dashboard() {
   const { data: students, loading } = useStudents();
   const [todayClasses, setTodayClasses] = useState([]);
+  const [todayError, setTodayError] = useState(null);
   const [linkedIds, setLinkedIds] = useState(new Set());
+  const [linkedError, setLinkedError] = useState(null);
   const [showLinkParent, setShowLinkParent] = useState(false);
   const [linkTarget, setLinkTarget] = useState(null);
   const router = useRouter();
 
-  useEffect(() => {
-    classesApi.listToday().then(({ data }) => setTodayClasses(data || []));
-  }, []);
+  const fetchLinkedIds = () => {
+    setLinkedError(null);
+    parentsApi.getLinkedStudentIds().then(({ data, error: err }) => {
+      if (err) setLinkedError(err.message);
+      else setLinkedIds(new Set((data || []).map(r => r.student_id)));
+    });
+  };
 
   useEffect(() => {
-    parentsApi.getLinkedStudentIds().then(({ data }) => {
-      setLinkedIds(new Set((data || []).map(r => r.student_id)));
+    classesApi.listToday().then(({ data, error: err }) => {
+      if (err) setTodayError(err.message);
+      else setTodayClasses(data || []);
     });
   }, []);
+
+  useEffect(() => { fetchLinkedIds(); }, []);
 
   const { disciplines: discMap } = useDisciplines();
 
@@ -50,6 +59,22 @@ export function Dashboard() {
   }));
 
   const unlinked = students.filter(s => !linkedIds.has(s.id));
+
+  if (!loading && students.length === 0) {
+    return (
+      <div className="w-full animate-fade-in">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-text">Dashboard</h1>
+          <p className="text-xs text-text-3 mt-0.5 capitalize">{today}</p>
+        </div>
+        <EmptyState
+          icon="👋"
+          title="Bem-vindo ao MAMUTE"
+          description="Cadastre seu primeiro aluno para começar a usar o sistema."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full animate-fade-in">
@@ -70,7 +95,9 @@ export function Dashboard() {
         {/* Aulas de Hoje */}
         <Card>
           <h2 className="font-semibold text-sm mb-4 text-text">Aulas de Hoje</h2>
-          {todayClasses.length === 0 ? (
+          {todayError ? (
+            <p className="text-danger text-xs">{todayError}</p>
+          ) : todayClasses.length === 0 ? (
             <p className="text-text-3 text-xs">Nenhuma aula registrada hoje.</p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -128,7 +155,11 @@ export function Dashboard() {
       </div>
 
       {/* Alunos sem responsável */}
-      {unlinked.length > 0 && (
+      {linkedError ? (
+        <div className="p-3 rounded-lg bg-danger-bg/40 border border-danger/20 text-danger text-xs font-medium">
+          Erro ao carregar vínculos: {linkedError}
+        </div>
+      ) : unlinked.length > 0 && (
         <Card>
           <h2 className="font-semibold text-sm mb-4 text-text">
             Alunos sem responsável vinculado
