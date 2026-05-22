@@ -1,30 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { khan as khanApi } from '@/lib/api';
-import { Loading, EmptyState } from '../shared/Loading';
+import { Loading } from '../shared/Loading';
+import { Button } from '../shared/Button';
 import { KHAN_BASE_URL } from '@/lib/constants';
+import { KhanSetupModal } from './KhanSetupModal';
+import { AddTopicModal } from './AddTopicModal';
 
 export function KhanTab({ studentId }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
+  const [showAddTopic, setShowAddTopic] = useState(false);
 
-  useEffect(() => {
-    khanApi.getProfile(studentId).then(({ data }) => {
-      setProfile(data);
-      setLoading(false);
-    });
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    const { data } = await khanApi.getProfile(studentId);
+    setProfile(data);
+    setLoading(false);
   }, [studentId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
 
   if (loading) return <Loading />;
 
   if (!profile) {
     return (
-      <EmptyState
-        icon="📚"
-        title="Khan Academy não configurado"
-        description="Adicione o perfil Khan Academy deste aluno para rastrear o progresso."
-      />
+      <div className="flex flex-col items-center gap-4 p-12 text-center select-none">
+        <div className="text-4xl mb-1">📚</div>
+        <div className="font-semibold text-text-2">Khan Academy não configurado</div>
+        <p className="text-xs text-text-3">Adicione o perfil Khan Academy deste aluno para rastrear o progresso.</p>
+        <Button onClick={() => setShowSetup(true)}>Configurar Khan</Button>
+        <KhanSetupModal
+          open={showSetup}
+          onClose={() => setShowSetup(false)}
+          studentId={studentId}
+          profile={null}
+          onSuccess={() => { setShowSetup(false); fetch(); }}
+        />
+      </div>
     );
   }
 
@@ -44,7 +59,7 @@ export function KhanTab({ studentId }) {
               Ver perfil no Khan Academy →
             </a>
           </div>
-          <div className="flex gap-4 sm:self-center select-none">
+          <div className="flex items-center gap-4 sm:self-center select-none">
             {[
               { label: 'Streak', value: profile.streak_days + 'd' },
               { label: 'Min/semana', value: profile.minutes_week },
@@ -54,56 +69,76 @@ export function KhanTab({ studentId }) {
                 <div className="text-[10px] text-text-3 font-semibold uppercase tracking-wider">{s.label}</div>
               </div>
             ))}
+            <Button variant="ghost" size="sm" onClick={() => setShowSetup(true)}>✏️</Button>
           </div>
         </div>
 
         {/* Topics */}
         <div className="flex flex-col gap-3 mt-4 border-t border-border pt-4">
-          {(profile.khan_topics || []).map(topic => (
-            <div key={topic.id} className="bg-bg rounded-xl p-4 border border-border/40">
-              <div className="flex justify-between items-center mb-2.5">
-                <div>
-                  <div className="font-medium text-sm text-text">{topic.name}</div>
-                  <a
-                    href={topic.url || KHAN_BASE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] text-piano hover:underline mt-0.5 inline-block"
-                  >
-                    Abrir no Khan →
-                  </a>
-                </div>
-                <span className="text-xs font-semibold text-text">{topic.progress || 0}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden w-full mb-3">
-                <div
-                  className="h-full rounded-full bg-warning transition-all duration-500"
-                  style={{ width: `${topic.progress || 0}%` }}
-                />
-              </div>
-              {(topic.khan_subtopics || []).map(sub => (
-                <div
-                  key={sub.id}
-                  className="flex justify-between items-center py-1 mt-1 border-t border-border/20 text-xs text-text-2"
-                >
-                  <span className="truncate max-w-[70%]">{sub.name}</span>
-                  <a
-                    href={sub.url || KHAN_BASE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-piano hover:underline shrink-0"
-                  >
-                    Abrir →
-                  </a>
-                </div>
-              ))}
-            </div>
-          ))}
-          {(profile.khan_topics || []).length === 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-text-2 select-none">Tópicos</span>
+            <Button variant="ghost" size="sm" onClick={() => setShowAddTopic(true)}>+ Tópico</Button>
+          </div>
+          {(profile.khan_topics || []).length === 0 ? (
             <p className="text-text-3 text-xs">Nenhum tópico cadastrado.</p>
+          ) : (
+            (profile.khan_topics || []).map(topic => (
+              <div key={topic.id} className="bg-bg rounded-xl p-4 border border-border/40">
+                <div className="flex justify-between items-center mb-2.5">
+                  <div>
+                    <div className="font-medium text-sm text-text">{topic.name}</div>
+                    <a
+                      href={topic.url || KHAN_BASE_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-piano hover:underline mt-0.5 inline-block"
+                    >
+                      Abrir no Khan →
+                    </a>
+                  </div>
+                  <span className="text-xs font-semibold text-text">{topic.progress || 0}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden w-full mb-3">
+                  <div
+                    className="h-full rounded-full bg-warning transition-all duration-500"
+                    style={{ width: `${topic.progress || 0}%` }}
+                  />
+                </div>
+                {(topic.khan_subtopics || []).map(sub => (
+                  <div
+                    key={sub.id}
+                    className="flex justify-between items-center py-1 mt-1 border-t border-border/20 text-xs text-text-2"
+                  >
+                    <span className="truncate max-w-[70%]">{sub.name}</span>
+                    <a
+                      href={sub.url || KHAN_BASE_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-piano hover:underline shrink-0"
+                    >
+                      Abrir →
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ))
           )}
         </div>
       </div>
+
+      <KhanSetupModal
+        open={showSetup}
+        onClose={() => setShowSetup(false)}
+        studentId={studentId}
+        profile={profile}
+        onSuccess={() => { setShowSetup(false); fetch(); }}
+      />
+      <AddTopicModal
+        open={showAddTopic}
+        onClose={() => setShowAddTopic(false)}
+        khanProfileId={profile.id}
+        onSuccess={() => { setShowAddTopic(false); fetch(); }}
+      />
     </div>
   );
 }

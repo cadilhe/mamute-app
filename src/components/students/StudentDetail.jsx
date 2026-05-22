@@ -1,29 +1,105 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStudent } from '@/hooks/useStudents';
 import { useClassesByStudent } from '@/hooks/useClasses';
+import { progress as progressApi, parents as parentsApi } from '../../lib/api';
 import { DisciplineBadge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { Card } from '../shared/Card';
 import { Loading } from '../shared/Loading';
 import { RegisterClassModal } from './RegisterClassModal';
+import { EditStudentModal } from './EditStudentModal';
+import { EditClassModal } from './EditClassModal';
 import { KhanTab } from '../khan/KhanTab';
 import { ReportModal } from '../reports/ReportModal';
+import { LinkParentModal } from '../parents/LinkParentModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy'];
 
+function ProgressCard({ studentId, discipline, existingPercent, existingNotes }) {
+  const [percent, setPercent] = useState(existingPercent || 0);
+  const [notes, setNotes] = useState(existingNotes || '');
+  const [saving, setSaving] = useState(false);
+
+  const clamp = (v) => Math.min(100, Math.max(0, v));
+
+  const handleSavePercent = async () => {
+    setSaving(true);
+    await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    setSaving(false);
+  };
+
+  const handleSaveNotes = async () => {
+    setSaving(true);
+    await progressApi.upsert({ student_id: studentId, discipline, percent: clamp(percent), notes });
+    setSaving(false);
+  };
+
+  return (
+    <Card>
+      <div className="flex justify-between items-center mb-2">
+        <DisciplineBadge discipline={discipline} size="md" />
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={percent}
+            onChange={e => setPercent(Number(e.target.value))}
+            onBlur={handleSavePercent}
+            className="w-14 px-2 py-0.5 rounded border border-border bg-surface text-text text-sm text-right outline-none focus:border-text-2"
+          />
+          <span className="text-sm font-semibold text-text-3 select-none">%</span>
+        </div>
+      </div>
+      <div className="h-2 rounded bg-surface-2 overflow-hidden w-full">
+        <div
+          className="h-full rounded bg-text transition-all duration-500"
+          style={{ width: `${clamp(percent)}%` }}
+        />
+      </div>
+      <div className="flex items-start gap-1 mt-2">
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          onBlur={handleSaveNotes}
+          placeholder="Observações..."
+          rows={2}
+          className="w-full px-3 py-1.5 rounded border border-border bg-surface text-text text-xs outline-none resize-y focus:border-text-2 placeholder:text-text-3"
+        />
+        {saving && (
+          <span className="text-[10px] text-text-3 whitespace-nowrap pt-1.5">Salvando...</span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function StudentDetail() {
   const { id } = useParams();
   const router = useRouter();
-  const { data: student, loading } = useStudent(id);
+  const { data: student, loading, refetch: refetchStudent } = useStudent(id);
   const { data: classHistory, refetch: refetchClasses } = useClassesByStudent(id);
   const [tab, setTab] = useState('Hoje');
   const [showRegister, setShowRegister] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showEditClass, setShowEditClass] = useState(false);
+  const [editClassTarget, setEditClassTarget] = useState(null);
+  const [linkedParents, setLinkedParents] = useState([]);
+  const [showLinkParent, setShowLinkParent] = useState(false);
+
+  const fetchParents = useCallback(async () => {
+    if (!id) return;
+    const { data } = await parentsApi.getByStudent(id);
+    setLinkedParents(data || []);
+  }, [id]);
+
+  useEffect(() => { fetchParents(); }, [fetchParents]);
 
   if (loading) return <Loading />;
   if (!student) return <div className="p-8 text-text-3 text-sm">Aluno não encontrado.</div>;
@@ -55,9 +131,39 @@ export function StudentDetail() {
           ))}
         </div>
         <div className="flex gap-2 shrink-0">
+          <Button variant="ghost" onClick={() => setShowEdit(true)}>✏️ Editar</Button>
           <Button variant="secondary" onClick={() => setShowReport(true)}>📋 Relatório</Button>
           <Button onClick={() => setShowRegister(true)}>+ Registrar aula</Button>
         </div>
+      </div>
+
+      {/* Responsável */}
+      <div className="mb-5 flex items-center gap-3 flex-wrap">
+        <span className="text-[10px] font-semibold text-text-3 uppercase tracking-wider select-none shrink-0">Responsável</span>
+        {linkedParents.length === 0 ? (
+          <span className="text-xs text-text-3">Nenhum vinculado.</span>
+        ) : (
+          linkedParents.map(lp => (
+            <span
+              key={lp.parent_id}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-2 border border-border text-xs text-text"
+            >
+              {lp.profiles?.full_name || 'Responsável'}
+              <button
+                onClick={async () => {
+                  await parentsApi.unlink(lp.parent_id, student.id);
+                  fetchParents();
+                }}
+                className="bg-transparent border-none cursor-pointer text-text-3 hover:text-danger text-sm leading-none select-none"
+              >
+                ×
+              </button>
+            </span>
+          ))
+        )}
+        <Button variant="ghost" size="sm" onClick={() => setShowLinkParent(true)}>
+          {linkedParents.length > 0 ? '+ Vincular' : 'Vincular'}
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -129,6 +235,12 @@ export function StudentDetail() {
                   <span className="text-xs text-text-3">
                     {format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </span>
+                  <button
+                    onClick={() => { setEditClassTarget(c); setShowEditClass(true); }}
+                    className="ml-auto bg-transparent border-none cursor-pointer text-text-3 hover:text-text transition-colors text-xs select-none"
+                  >
+                    ✏️
+                  </button>
                 </div>
                 <p className="text-sm text-text-2 leading-normal">{c.content || 'Sem descrição'}</p>
                 {c.pending && <p className="text-xs text-warning mt-1 font-medium">⚠ {c.pending}</p>}
@@ -141,26 +253,21 @@ export function StudentDetail() {
       {/* Tab: Progresso */}
       {tab === 'Progresso' && (
         <div className="flex flex-col gap-3">
-          {(student.progress || []).map(p => {
-            const d = p.discipline;
-            return (
-              <Card key={p.id}>
-                <div className="flex justify-between items-center mb-2">
-                  <DisciplineBadge discipline={d} size="md" />
-                  <span className="text-sm font-semibold text-text">{p.percent || 0}%</span>
-                </div>
-                <div className="h-2 rounded bg-surface-2 overflow-hidden w-full">
-                  <div
-                    className="h-full rounded bg-text transition-all duration-500"
-                    style={{ width: `${p.percent || 0}%` }}
-                  />
-                </div>
-                {p.notes && <p className="text-xs text-text-3 mt-2">{p.notes}</p>}
-              </Card>
-            );
-          })}
-          {(student.progress || []).length === 0 && (
-            <p className="text-text-3 text-sm">Nenhum progresso registrado.</p>
+          {(student.modules || []).length === 0 ? (
+            <p className="text-text-3 text-sm">Nenhuma disciplina cadastrada.</p>
+          ) : (
+            (student.modules || []).map(m => {
+              const p = (student.progress || []).find(pr => pr.discipline === m.discipline);
+              return (
+                <ProgressCard
+                  key={m.id}
+                  studentId={student.id}
+                  discipline={m.discipline}
+                  existingPercent={p?.percent || 0}
+                  existingNotes={p?.notes || ''}
+                />
+              );
+            })
           )}
         </div>
       )}
@@ -178,11 +285,40 @@ export function StudentDetail() {
           refetchClasses();
         }}
       />
+      <EditStudentModal
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        student={student}
+        onSuccess={() => {
+          setShowEdit(false);
+          refetchStudent();
+          refetchClasses();
+        }}
+      />
+      <EditClassModal
+        open={showEditClass}
+        onClose={() => setShowEditClass(false)}
+        classItem={editClassTarget}
+        student={student}
+        onSuccess={() => {
+          setShowEditClass(false);
+          refetchClasses();
+        }}
+      />
       <ReportModal
         open={showReport}
         onClose={() => setShowReport(false)}
         student={student}
         classHistory={classHistory}
+      />
+      <LinkParentModal
+        open={showLinkParent}
+        onClose={() => setShowLinkParent(false)}
+        student={student}
+        onSuccess={() => {
+          setShowLinkParent(false);
+          fetchParents();
+        }}
       />
     </div>
   );

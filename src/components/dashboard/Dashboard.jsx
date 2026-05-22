@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudents } from '@/hooks/useStudents';
-import { classes as classesApi } from '@/lib/api';
+import { classes as classesApi, parents as parentsApi } from '@/lib/api';
 import { useDisciplines } from '@/hooks/useDisciplines';
 import { DisciplineBadge } from '../shared/Badge';
 import { Card } from '../shared/Card';
+import { Button } from '../shared/Button';
 import { Loading } from '../shared/Loading';
+import { LinkParentModal } from '../parents/LinkParentModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -24,10 +26,19 @@ function StatCard({ label, value, sub, colorClass }) {
 export function Dashboard() {
   const { data: students, loading } = useStudents();
   const [todayClasses, setTodayClasses] = useState([]);
+  const [linkedIds, setLinkedIds] = useState(new Set());
+  const [showLinkParent, setShowLinkParent] = useState(false);
+  const [linkTarget, setLinkTarget] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     classesApi.listToday().then(({ data }) => setTodayClasses(data || []));
+  }, []);
+
+  useEffect(() => {
+    parentsApi.getLinkedStudentIds().then(({ data }) => {
+      setLinkedIds(new Set((data || []).map(r => r.student_id)));
+    });
   }, []);
 
   const { disciplines: discMap } = useDisciplines();
@@ -37,6 +48,8 @@ export function Dashboard() {
   students.forEach(s => (s.modules || []).forEach(m => {
     discCounts[m.discipline] = (discCounts[m.discipline] || 0) + 1;
   }));
+
+  const unlinked = students.filter(s => !linkedIds.has(s.id));
 
   return (
     <div className="w-full animate-fade-in">
@@ -53,7 +66,7 @@ export function Dashboard() {
       </div>
 
       {/* Aulas de Hoje e Disciplinas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Aulas de Hoje */}
         <Card>
           <h2 className="font-semibold text-sm mb-4 text-text">Aulas de Hoje</h2>
@@ -113,6 +126,57 @@ export function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Alunos sem responsável */}
+      {unlinked.length > 0 && (
+        <Card>
+          <h2 className="font-semibold text-sm mb-4 text-text">
+            Alunos sem responsável vinculado
+            <span className="text-text-3 font-normal ml-2">({unlinked.length})</span>
+          </h2>
+          <div className="flex flex-col gap-2">
+            {unlinked.map(s => (
+              <div
+                key={s.id}
+                className="flex items-center gap-3 p-3 rounded-lg bg-surface-2"
+              >
+                <div className="w-8 h-8 rounded-full bg-bg flex items-center justify-center font-bold text-xs text-text-2 shrink-0 select-none">
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm text-text truncate">{s.name}</div>
+                  <div className="text-xs text-text-3">
+                    {s.age && `${s.age} anos`}{s.school && ` · ${s.school}`}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setLinkTarget(s); setShowLinkParent(true); }}
+                >
+                  Vincular →
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <LinkParentModal
+        open={showLinkParent}
+        onClose={() => setShowLinkParent(false)}
+        student={linkTarget}
+        onSuccess={() => {
+          setShowLinkParent(false);
+          if (linkTarget) {
+            setLinkedIds(prev => {
+              const next = new Set(prev);
+              next.add(linkTarget.id);
+              return next;
+            });
+          }
+        }}
+      />
     </div>
   );
 }

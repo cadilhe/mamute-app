@@ -1,22 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { schedule as scheduleApi } from '@/lib/api';
+import { useStudents } from '@/hooks/useStudents';
 import { DisciplineBadge } from '../shared/Badge';
+import { Button } from '../shared/Button';
 import { Loading } from '../shared/Loading';
+import { AddScheduleModal } from './AddScheduleModal';
 
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 export function SchedulePage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const { data: students } = useStudents();
 
-  useEffect(() => {
-    scheduleApi.list().then(({ data: d }) => {
-      setData(d || []);
-      setLoading(false);
-    });
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    const { data: d } = await scheduleApi.list();
+    setData(d || []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => { fetch(); }, [fetch]);
 
   if (loading) return <Loading />;
 
@@ -27,9 +34,12 @@ export function SchedulePage() {
 
   return (
     <div className="w-full animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
-        <p className="text-xs text-text-3 mt-0.5">Grade semanal de aulas</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
+          <p className="text-xs text-text-3 mt-0.5">Grade semanal de aulas</p>
+        </div>
+        <Button onClick={() => setShowAdd(true)}>+ Horário</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -65,6 +75,16 @@ export function SchedulePage() {
           </div>
         ))}
       </div>
+
+      <AddScheduleModal
+        open={showAdd}
+        onClose={() => setShowAdd(false)}
+        students={students}
+        onSuccess={() => {
+          setShowAdd(false);
+          fetch();
+        }}
+      />
     </div>
   );
 }

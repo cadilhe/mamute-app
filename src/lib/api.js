@@ -70,6 +70,17 @@ export const modules = {
 
   update: (id, data) =>
     supabase.from('modules').update(data).eq('id', id).select().single(),
+
+  remove: (id) => supabase.from('modules').delete().eq('id', id),
+};
+
+// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+export const progress = {
+  listByStudent: (studentId) =>
+    supabase.from('progress').select('*').eq('student_id', studentId),
+
+  upsert: (data) =>
+    supabase.from('progress').upsert(data).select().single(),
 };
 
 // ─── SCHEDULE ────────────────────────────────────────────────────────────────
@@ -171,4 +182,47 @@ export const parents = {
       .from('parent_student')
       .select(`students(*, modules(*), classes(*), khan_profiles(*), progress(*))`)
       .eq('parent_id', parentId),
+
+  list: () =>
+    supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('role', 'parent')
+      .order('full_name'),
+
+  link: (parentId, studentId) =>
+    supabase.from('parent_student').insert({ parent_id: parentId, student_id: studentId }),
+
+  unlink: (parentId, studentId) =>
+    supabase
+      .from('parent_student')
+      .delete()
+      .eq('parent_id', parentId)
+      .eq('student_id', studentId),
+
+  getByStudent: async (studentId) => {
+    const { data: links } = await supabase
+      .from('parent_student')
+      .select('parent_id')
+      .eq('student_id', studentId);
+
+    const parentIds = (links || []).map(l => l.parent_id);
+
+    if (parentIds.length === 0) return { data: [] };
+
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', parentIds);
+
+    return {
+      data: parentIds.map(pid => ({
+        parent_id: pid,
+        profiles: (profilesData || []).find(p => p.id === pid) || null,
+      })),
+    };
+  },
+
+  getLinkedStudentIds: () =>
+    supabase.from('parent_student').select('student_id'),
 };

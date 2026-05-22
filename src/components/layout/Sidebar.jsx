@@ -8,7 +8,7 @@ const NAV = [
   { href: '/', icon: '⬡', label: 'Dashboard' },
   { href: '/alunos', icon: '◈', label: 'Alunos' },
   { href: '/agenda', icon: '◎', label: 'Agenda' },
-  { href: '/visao-geral', icon: '◉', label: 'Visão Geral', alert: true },
+  { href: '/visao-geral', icon: '◉', label: 'Visão Geral' },
   { href: '/disciplinas', icon: '◆', label: 'Disciplinas' },
 ];
 
