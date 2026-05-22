@@ -103,7 +103,7 @@ export function ParentsPage() {
                 Última Aula
               </div>
               <div className="text-xs text-text-3 mb-2 font-medium capitalize">
-                {format(new Date(lastClass.date), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                {lastClass.date ? format(new Date(lastClass.date), "EEEE, d 'de' MMMM", { locale: ptBR }) : '—'}
               </div>
               <p className="text-sm leading-relaxed text-text-2">{lastClass.content || 'Sem descrição'}</p>
               

@@ -12,6 +12,7 @@ export function LinkParentModal({ open, onClose, student, onSuccess }) {
   const [parentList, setParentList] = useState([]);
   const [linkedParentIds, setLinkedParentIds] = useState(new Set());
   const [parentId, setParentId] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

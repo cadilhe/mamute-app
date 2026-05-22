@@ -1,3 +1,5 @@
+'use client';
+
 import { Modal } from '../shared/Modal';
 import { Button } from '../shared/Button';
 import { format } from 'date-fns';
@@ -22,7 +24,7 @@ export function ReportModal({ open, onClose, student, classHistory }) {
     win.document.write('<h2>Histórico (' + classHistory.length + ' aulas)</h2>');
     win.document.write('<table><tr><th>Data</th><th>Disciplina</th><th>Conteúdo</th></tr>');
     classHistory.forEach(c => {
-      win.document.write('<tr><td>' + format(new Date(c.date), "d/MM/yyyy") + '</td><td>' + (c.modules?.name||'—') + '</td><td>' + (c.content||'—') + '</td></tr>');
+      win.document.write('<tr><td>' + (c.date ? format(new Date(c.date), "d/MM/yyyy") : '—') + '</td><td>' + (c.modules?.name||'—') + '</td><td>' + (c.content||'—') + '</td></tr>');
     });
     win.document.write('</table></body></html>');
     win.document.close();
@@ -53,7 +55,7 @@ export function ReportModal({ open, onClose, student, classHistory }) {
             </div>
             <div className="bg-surface-2 rounded-xl p-4 border border-border/30">
               <div className="text-xs text-text-3 mb-1.5 font-medium">
-                {format(new Date(lastClass.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {lastClass.date ? format(new Date(lastClass.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR }) : '—'}
               </div>
               <p className="text-sm leading-relaxed text-text-2">{lastClass.content}</p>
               {lastClass.pending && <p className="text-xs text-warning mt-2 font-medium">⚠ {lastClass.pending}</p>}
@@ -71,7 +73,7 @@ export function ReportModal({ open, onClose, student, classHistory }) {
             {classHistory.map(c => (
               <div key={c.id} className="flex gap-3 items-center text-xs py-1.5 border-b border-border/50 last:border-0">
                 <span className="text-text-3 font-semibold min-w-[70px] shrink-0">
-                  {format(new Date(c.date), 'd/MM/yyyy')}
+                  {c.date ? format(new Date(c.date), 'd/MM/yyyy') : '—'}
                 </span>
                 <span className="text-text-2 truncate flex-1">
                   {c.content?.substring(0, 80) || '—'}

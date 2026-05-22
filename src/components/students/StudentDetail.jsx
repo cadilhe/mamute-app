@@ -198,7 +198,7 @@ export function StudentDetail() {
               <div className="flex gap-2 items-center mb-2">
                 <DisciplineBadge discipline={lastClass.modules?.discipline} />
                 <span className="text-sm text-text-3">
-                  {format(new Date(lastClass.date), "d 'de' MMMM", { locale: ptBR })}
+                  {lastClass.date ? format(new Date(lastClass.date), "d 'de' MMMM", { locale: ptBR }) : '—'}
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-text-2">{lastClass.content || 'Sem descrição'}</p>
@@ -235,7 +235,7 @@ export function StudentDetail() {
                 <div className="flex gap-2 items-center mb-1.5">
                   <DisciplineBadge discipline={c.modules?.discipline} />
                   <span className="text-xs text-text-3">
-                    {format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {c.date ? format(new Date(c.date), "d 'de' MMMM 'de' yyyy", { locale: ptBR }) : '—'}
                   </span>
                   <button
                     onClick={() => { setEditClassTarget(c); setShowEditClass(true); }}

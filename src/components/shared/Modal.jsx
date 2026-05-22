@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 
 export function Modal({ open, onClose, title, children, width = 560 }) {
