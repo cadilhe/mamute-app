@@ -1,34 +1,195 @@
 'use client';
 
+import { useState } from 'react';
 import { Modal } from '../shared/Modal';
 import { Button } from '../shared/Button';
+import { useToast } from '../shared/Toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DISCIPLINES } from '../../lib/constants';
 
 export function ReportModal({ open, onClose, student, classHistory }) {
+  const [loadingPDF, setLoadingPDF] = useState(false);
+  const toast = useToast();
+
   if (!student) return null;
   const lastClass = classHistory?.[0];
 
-  const handlePrint = () => {
-    const win = window.open('', '_blank');
-    win.document.write('<html><head><title>Relatório - ' + student.name + '</title>');
-    win.document.write('<style>body{font-family:sans-serif;padding:32px;max-width:800px;margin:0 auto}h1{font-size:24px;margin-bottom:4px}table{width:100%;border-collapse:collapse}td,th{padding:8px 12px;border:1px solid #ddd;font-size:13px}.badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}</style>');
-    win.document.write('</head><body>');
-    win.document.write('<h1>' + student.name + '</h1>');
-    win.document.write('<p style="color:#888;margin-bottom:24px">' + (student.age ? student.age+' anos' : '') + (student.school ? ' · ' + student.school : '') + '</p>');
-    if (lastClass) {
-      win.document.write('<h2>Última Aula</h2><p>' + lastClass.content + '</p>');
-      if (lastClass.pending) win.document.write('<p><strong>Pendências:</strong> ' + lastClass.pending + '</p>');
-      if (lastClass.next_step) win.document.write('<p><strong>Próximo passo:</strong> ' + lastClass.next_step + '</p>');
+  const handleDownloadPDF = async () => {
+    setLoadingPDF(true);
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const { default: autoTable } = await import('jspdf-autotable');
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 14;
+      const contentWidth = pageWidth - 2 * margin; // 182mm
+
+      // --- Header ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(23, 23, 26);
+      doc.text('MAMUTE', margin, 20);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(136, 136, 160);
+      doc.text('SISTEMA DE GESTÃO DE ENSINO', margin, 24);
+
+      doc.setDrawColor(42, 42, 48);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 28, pageWidth - margin, 28);
+
+      // Student Info
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(15, 15, 16);
+      doc.text(student.name, margin, 38);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(88, 88, 111);
+      const details = [];
+      if (student.age) details.push(`${student.age} anos`);
+      if (student.school) details.push(student.school);
+      details.push(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`);
+      doc.text(details.join('  ·  '), margin, 43);
+
+      let currentY = 52;
+
+      // --- Section: Progresso por Disciplina ---
+      const progressData = student.progress || [];
+      if (progressData.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(23, 23, 26);
+        doc.text('Progresso das Disciplinas', margin, currentY);
+        
+        const tableRows = progressData.map(p => {
+          const disc = DISCIPLINES[p.discipline];
+          const label = disc?.label || p.discipline;
+          return [label, `${p.percent}%`, p.notes || '—'];
+        });
+
+        autoTable(doc, {
+          startY: currentY + 3,
+          head: [['Disciplina', 'Progresso', 'Observações / Metas']],
+          body: tableRows,
+          theme: 'striped',
+          headStyles: { fillColor: [23, 23, 26], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 8.5, cellPadding: 3.5, font: 'helvetica' },
+          columnStyles: {
+            0: { cellWidth: 35, fontStyle: 'bold' },
+            1: { cellWidth: 25, halign: 'center' },
+            2: { cellWidth: contentWidth - 60 }
+          }
+        });
+        
+        currentY = doc.lastAutoTable.finalY + 10;
+      }
+
+      // --- Section: Última Aula ---
+      if (lastClass) {
+        if (currentY > 230) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(23, 23, 26);
+        doc.text('Última Aula Registrada', margin, currentY);
+
+        const formattedClassDate = lastClass.date
+          ? format(new Date(lastClass.date), "dd/MM/yyyy")
+          : '—';
+        const disciplineName = lastClass.modules?.name || '—';
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(50, 50, 50);
+        doc.text(`${disciplineName}  (${formattedClassDate})`, margin, currentY + 5.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(80, 80, 80);
+        
+        const contentText = lastClass.content || 'Sem descrição cadastrada.';
+        const splitContent = doc.splitTextToSize(`Conteúdo: ${contentText}`, contentWidth);
+        doc.text(splitContent, margin, currentY + 10.5);
+        
+        let nextLineY = currentY + 10.5 + (splitContent.length * 4.5);
+
+        if (lastClass.pending) {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(245, 158, 11);
+          const splitPending = doc.splitTextToSize(`Pendências: ${lastClass.pending}`, contentWidth);
+          doc.text(splitPending, margin, nextLineY);
+          nextLineY += (splitPending.length * 4.5);
+        }
+
+        if (lastClass.next_step) {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(16, 185, 129);
+          const splitNext = doc.splitTextToSize(`Próximo Passo: ${lastClass.next_step}`, contentWidth);
+          doc.text(splitNext, margin, nextLineY);
+          nextLineY += (splitNext.length * 4.5);
+        }
+
+        currentY = nextLineY + 6;
+      }
+
+      // --- Section: Histórico Completo ---
+      if (classHistory && classHistory.length > 0) {
+        if (currentY > 230) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(23, 23, 26);
+        doc.text(`Histórico Completo (${classHistory.length} aulas)`, margin, currentY);
+
+        const historyRows = classHistory.map(c => [
+          c.date ? format(new Date(c.date), 'dd/MM/yyyy') : '—',
+          c.modules?.name || '—',
+          c.content || '—',
+          c.pending || '—'
+        ]);
+
+        autoTable(doc, {
+          startY: currentY + 3,
+          head: [['Data', 'Disciplina', 'Conteúdo da Aula', 'Pendências']],
+          body: historyRows,
+          theme: 'striped',
+          headStyles: { fillColor: [23, 23, 26], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 8.5, cellPadding: 3.5, font: 'helvetica' },
+          columnStyles: {
+            0: { cellWidth: 22 },
+            1: { cellWidth: 28 },
+            2: { cellWidth: 82 },
+            3: { cellWidth: 50 }
+          }
+        });
+      }
+
+      // Save PDF
+      const sanitizedStudentName = student.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_');
+      
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      doc.save(`Relatorio_${sanitizedStudentName}_${formattedDate}.pdf`);
+      toast.success('Relatório PDF baixado com sucesso');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao gerar relatório em PDF');
+    } finally {
+      setLoadingPDF(false);
     }
-    win.document.write('<h2>Histórico (' + classHistory.length + ' aulas)</h2>');
-    win.document.write('<table><tr><th>Data</th><th>Disciplina</th><th>Conteúdo</th></tr>');
-    classHistory.forEach(c => {
-      win.document.write('<tr><td>' + (c.date ? format(new Date(c.date), "d/MM/yyyy") : '—') + '</td><td>' + (c.modules?.name||'—') + '</td><td>' + (c.content||'—') + '</td></tr>');
-    });
-    win.document.write('</table></body></html>');
-    win.document.close();
-    win.print();
   };
 
   return (
@@ -85,7 +246,9 @@ export function ReportModal({ open, onClose, student, classHistory }) {
 
         <div className="flex justify-end gap-2.5 pt-3 border-t border-border mt-1">
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
-          <Button onClick={handlePrint}>🖨 Imprimir / PDF</Button>
+          <Button onClick={handleDownloadPDF} disabled={loadingPDF}>
+            {loadingPDF ? 'Gerando...' : '📥 Baixar PDF'}
+          </Button>
         </div>
       </div>
     </Modal>

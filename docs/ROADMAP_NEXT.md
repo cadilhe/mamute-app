@@ -7,10 +7,10 @@
 - [x] Validação de formulários (formatos: email, URL, range 0-100)
 
 ## Médio prazo (funcionalidades)
-- [ ] F006 — Notificação por email ao responsável (Supabase Edge Function + Resend/SendGrid)
-- [ ] Relatórios em PDF (download real, não só view no browser)
-- [ ] Editar/remover horário da agenda (SchedulePage)
-- [ ] Editar/remover tópicos e subtópicos Khan (KhanTab)
+- [x] F006 — Notificação por email ao responsável (Supabase Edge Function + Resend/SendGrid)
+- [x] Relatórios em PDF (download real, não só view no browser)
+- [x] Editar/remover horário da agenda (SchedulePage)
+- [x] Editar/remover tópicos e subtópicos Khan (KhanTab)
 
 ## Longo prazo (PRD Fase 3+)
 - [ ] Financeiro: mensalidades, histórico de pagamentos

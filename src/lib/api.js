@@ -119,8 +119,17 @@ export const khan = {
   updateTopic: (id, data) =>
     supabase.from('khan_topics').update(data).eq('id', id).select().single(),
 
+  removeTopic: (id) =>
+    supabase.from('khan_topics').delete().eq('id', id),
+
   addSubtopic: (data) =>
     supabase.from('khan_subtopics').insert(data).select().single(),
+
+  updateSubtopic: (id, data) =>
+    supabase.from('khan_subtopics').update(data).eq('id', id).select().single(),
+
+  removeSubtopic: (id) =>
+    supabase.from('khan_subtopics').delete().eq('id', id),
 };
 
 // ─── OVERVIEW ────────────────────────────────────────────────────────────────
@@ -230,3 +239,9 @@ export const parents = {
   getLinkedStudentIds: () =>
     supabase.from('parent_student').select('student_id'),
 };
+
+// ─── FUNCTIONS / NOTIFICATIONS ───────────────────────────────────────────────
+export const notifications = {
+  sendClassEmail: (data) => supabase.functions.invoke('send-class-email', { body: data }),
+};
+

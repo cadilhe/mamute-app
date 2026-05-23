@@ -4,16 +4,18 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "next": "^14.2.3",
     "date-fns": "^3.0.0",
-    "lucide-react": "^0.303.0"
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^0.303.0",
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.3",
+    "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
-    "autoprefixer": "^10.4.19"
+    "tailwindcss": "^3.4.3"
   },
   "scripts": {
     "dev": "next dev",
@@ -21,10 +23,20 @@
     "start": "next start"
   },
   "eslintConfig": {
-    "extends": ["react-app"]
+    "extends": [
+      "react-app"
+    ]
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

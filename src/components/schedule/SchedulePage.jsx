@@ -7,6 +7,7 @@ import { DisciplineBadge } from '../shared/Badge';
 import { Button } from '../shared/Button';
 import { Loading, ErrorState, EmptyState } from '../shared/Loading';
 import { AddScheduleModal } from './AddScheduleModal';
+import { EditScheduleModal } from './EditScheduleModal';
 
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -15,6 +16,8 @@ export function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editScheduleTarget, setEditScheduleTarget] = useState(null);
   const { data: students } = useStudents();
 
   const fetch = useCallback(async () => {
@@ -56,6 +59,13 @@ export function SchedulePage() {
           students={students}
           onSuccess={() => { setShowAdd(false); fetch(); }}
         />
+        <EditScheduleModal
+          open={showEdit}
+          onClose={() => { setShowEdit(false); setEditScheduleTarget(null); }}
+          scheduleItem={editScheduleTarget}
+          students={students}
+          onSuccess={() => { setShowEdit(false); setEditScheduleTarget(null); fetch(); }}
+        />
       </div>
     );
   }
@@ -90,7 +100,8 @@ export function SchedulePage() {
                 byDay[i + 1]?.map(s => (
                   <div
                     key={s.id}
-                    className="p-2.5 rounded-lg bg-bg border border-border/30 flex justify-between items-center gap-2 hover:border-text-3 transition-colors"
+                    onClick={() => { setEditScheduleTarget(s); setShowEdit(true); }}
+                    className="p-2.5 rounded-lg bg-bg border border-border/30 flex justify-between items-center gap-2 hover:border-text-3 cursor-pointer transition-colors"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-xs text-text truncate">{s.students?.name}</div>
@@ -115,6 +126,20 @@ export function SchedulePage() {
         students={students}
         onSuccess={() => {
           setShowAdd(false);
+          fetch();
+        }}
+      />
+      <EditScheduleModal
+        open={showEdit}
+        onClose={() => {
+          setShowEdit(false);
+          setEditScheduleTarget(null);
+        }}
+        scheduleItem={editScheduleTarget}
+        students={students}
+        onSuccess={() => {
+          setShowEdit(false);
+          setEditScheduleTarget(null);
           fetch();
         }}
       />

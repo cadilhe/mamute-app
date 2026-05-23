@@ -7,6 +7,7 @@ import { Button } from '../shared/Button';
 import { KHAN_BASE_URL } from '@/lib/constants';
 import { KhanSetupModal } from './KhanSetupModal';
 import { AddTopicModal } from './AddTopicModal';
+import { EditTopicModal } from './EditTopicModal';
 
 export function KhanTab({ studentId }) {
   const [profile, setProfile] = useState(null);
@@ -14,6 +15,8 @@ export function KhanTab({ studentId }) {
   const [error, setError] = useState(null);
   const [showSetup, setShowSetup] = useState(false);
   const [showAddTopic, setShowAddTopic] = useState(false);
+  const [showEditTopic, setShowEditTopic] = useState(false);
+  const [editTopicTarget, setEditTopicTarget] = useState(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -94,7 +97,19 @@ export function KhanTab({ studentId }) {
               <div key={topic.id} className="bg-bg rounded-xl p-4 border border-border/40">
                 <div className="flex justify-between items-center mb-2.5">
                   <div>
-                    <div className="font-medium text-sm text-text">{topic.name}</div>
+                    <div className="font-medium text-sm text-text flex items-center gap-2">
+                      {topic.name}
+                      <button
+                        onClick={() => {
+                          setEditTopicTarget(topic);
+                          setShowEditTopic(true);
+                        }}
+                        className="bg-transparent border-none cursor-pointer text-text-3 hover:text-text text-[11px] select-none"
+                        title="Editar tópico"
+                      >
+                        ✏️
+                      </button>
+                    </div>
                     <a
                       href={topic.url || KHAN_BASE_URL}
                       target="_blank"
@@ -146,6 +161,19 @@ export function KhanTab({ studentId }) {
         onClose={() => setShowAddTopic(false)}
         khanProfileId={profile.id}
         onSuccess={() => { setShowAddTopic(false); fetch(); }}
+      />
+      <EditTopicModal
+        open={showEditTopic}
+        onClose={() => {
+          setShowEditTopic(false);
+          setEditTopicTarget(null);
+        }}
+        topic={editTopicTarget}
+        onSuccess={() => {
+          setShowEditTopic(false);
+          setEditTopicTarget(null);
+          fetch();
+        }}
       />
     </div>
   );

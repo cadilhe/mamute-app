@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../shared/Modal';
 import { Textarea, Select } from '../shared/Input';
 import { Button } from '../shared/Button';
-import { classes as classesApi } from '../../lib/api';
+import { classes as classesApi, notifications as notificationsApi } from '../../lib/api';
 import { useToast } from '../shared/Toast';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function RegisterClassModal({ open, onClose, student, onSuccess }) {
   const [moduleId, setModuleId] = useState('');
@@ -14,9 +15,16 @@ export function RegisterClassModal({ open, onClose, student, onSuccess }) {
   const [pending, setPending] = useState('');
   const [nextStep, setNextStep] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notifyParent, setNotifyParent] = useState(!!student?.parent_email);
   const toast = useToast();
 
   const modules = student?.modules || [];
+
+  useEffect(() => {
+    if (open) {
+      setNotifyParent(!!student?.parent_email);
+    }
+  }, [open, student?.parent_email]);
 
   const handleSubmit = async () => {
     if (!moduleId) return;
@@ -34,6 +42,29 @@ export function RegisterClassModal({ open, onClose, student, onSuccess }) {
       setLoading(false);
       return;
     }
+
+    if (notifyParent && student?.parent_email) {
+      const activeModule = student.modules?.find(m => m.id === moduleId);
+      const disciplineName = activeModule?.name || 'Disciplina';
+      const disciplineKey = activeModule?.discipline || '';
+
+      const { error: emailErr } = await notificationsApi.sendClassEmail({
+        parentEmail: student.parent_email,
+        studentName: student.name,
+        disciplineName,
+        disciplineKey,
+        content,
+        pending,
+        nextStep,
+        formattedDate: format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR }),
+      });
+
+      if (emailErr) {
+        console.error('Erro ao enviar e-mail:', emailErr);
+        toast.warning('Aula registrada, mas a notificação por e-mail falhou.');
+      }
+    }
+
     setContent('');
     setPending('');
     setNextStep('');
@@ -75,6 +106,29 @@ export function RegisterClassModal({ open, onClose, student, onSuccess }) {
           placeholder="O que será feito na próxima aula..."
           rows={2}
         />
+        <div className="flex items-center gap-2 py-1 select-none">
+          <input
+            id="notifyParentCheckbox"
+            type="checkbox"
+            checked={notifyParent}
+            disabled={!student?.parent_email}
+            onChange={e => setNotifyParent(e.target.checked)}
+            className="w-4 h-4 rounded border-border bg-surface accent-text text-text cursor-pointer disabled:cursor-not-allowed"
+          />
+          <label
+            htmlFor="notifyParentCheckbox"
+            className={`text-xs font-medium cursor-pointer ${
+              student?.parent_email ? 'text-text-2' : 'text-text-3 cursor-not-allowed'
+            }`}
+          >
+            Notificar responsável por e-mail
+            {!student?.parent_email && (
+              <span className="text-[10px] text-text-3 ml-1.5 font-normal italic">
+                (E-mail do responsável não cadastrado)
+              </span>
+            )}
+          </label>
+        </div>
         <div className="flex justify-end gap-2.5 pt-2">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={loading || !moduleId}>
