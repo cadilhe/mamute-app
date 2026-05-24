@@ -5,6 +5,7 @@ import { Button } from '../shared/Button';
 import { Loading } from '../shared/Loading';
 import { useToast } from '../shared/Toast';
 import { payments as paymentsApi, students as studentsApi } from '@/lib/api';
+import { useUnits } from '@/hooks/useUnits';
 import { AddPaymentModal } from './AddPaymentModal';
 import { EditPaymentModal } from './EditPaymentModal';
 
@@ -40,6 +41,7 @@ const MONTHS = [
 
 export function FinancePage() {
   const toast = useToast();
+  const { activeUnitId } = useUnits();
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export function FinancePage() {
       setLoading(true);
       const [paymentsRes, studentsRes] = await Promise.all([
         paymentsApi.listAll(),
-        studentsApi.list(),
+        studentsApi.list(activeUnitId),
       ]);
 
       if (paymentsRes.error) throw paymentsRes.error;
@@ -74,7 +76,7 @@ export function FinancePage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, activeUnitId]);
 
   useEffect(() => {
     fetchData();
@@ -100,16 +102,17 @@ export function FinancePage() {
     const paymentYear = p.due_date.split('-')[0];
     const matchYear = yearFilter === 'all' || paymentYear === yearFilter;
 
-    return matchSearch && matchStatus && matchMonth && matchYear;
+    // Filtro por unidade ativa
+    const matchUnit = activeUnitId === 'all' || p.students?.unit_id === activeUnitId;
+
+    return matchSearch && matchStatus && matchMonth && matchYear && matchUnit;
   });
 
-  // Cálculos do Resumo Geral (baseado em todos os pagamentos carregados, ou nos filtrados?
-  // O faturamento global do painel de resumo normalmente é calculado com base no total do ano/filtro atual ou global.
-  // Vamos calcular com base nos pagamentos gerais para dar uma visão do caixa geral, ou baseado no ano selecionado se houver.
-  // Vamos basear no ano selecionado para fazer sentido financeiro (ex: ano atual).
-  const statsPayments = yearFilter === 'all' 
+  // Cálculos do Resumo Geral (filtrado também pela unidade ativa)
+  const statsPayments = (yearFilter === 'all' 
     ? payments 
-    : payments.filter(p => p.due_date.startsWith(yearFilter));
+    : payments.filter(p => p.due_date.startsWith(yearFilter)))
+    .filter(p => activeUnitId === 'all' || p.students?.unit_id === activeUnitId);
 
   const totalPaid = statsPayments
     .filter(p => p.status === 'paid')

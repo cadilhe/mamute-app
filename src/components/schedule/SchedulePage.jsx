@@ -9,9 +9,12 @@ import { Loading, ErrorState, EmptyState } from '../shared/Loading';
 import { AddScheduleModal } from './AddScheduleModal';
 import { EditScheduleModal } from './EditScheduleModal';
 
+import { useUnits } from '@/hooks/useUnits';
+
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 export function SchedulePage() {
+  const { activeUnitId } = useUnits();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,7 +41,12 @@ export function SchedulePage() {
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} onRetry={fetch} />;
 
-  if (data.length === 0) {
+  // Filtragem de horários pela unidade ativa
+  const filteredSchedules = data.filter(s =>
+    activeUnitId === 'all' || s.students?.unit_id === activeUnitId
+  );
+
+  if (filteredSchedules.length === 0) {
     return (
       <div className="w-full animate-fade-in">
         <div className="mb-6 flex items-center justify-between">
@@ -72,7 +80,7 @@ export function SchedulePage() {
 
   const byDay = {};
   DAYS.forEach((_, i) => {
-    byDay[i + 1] = data.filter(s => s.day_of_week === i + 1);
+    byDay[i + 1] = filteredSchedules.filter(s => s.day_of_week === i + 1);
   });
 
   return (

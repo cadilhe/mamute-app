@@ -2,19 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { students as studentsApi } from '../lib/api';
+import { useUnits } from './useUnits';
 
 export function useStudents() {
+  const { activeUnitId } = useUnits();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data: result, error: err } = await studentsApi.list();
+    const { data: result, error: err } = await studentsApi.list(activeUnitId);
     if (err) setError(err.message);
     else setData(result || []);
     setLoading(false);
-  }, []);
+  }, [activeUnitId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

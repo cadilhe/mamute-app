@@ -13,16 +13,48 @@ const NAV = [
   { href: '/disciplinas', icon: '◆', label: 'Disciplinas' },
 ];
 
+import { useUnits } from '@/hooks/useUnits';
+
 export function Sidebar() {
   const { profile, signOut } = useAuth();
+  const { units, activeUnitId, setActiveUnitId } = useUnits();
   const pathname = usePathname();
 
   return (
     <aside className="w-[var(--sidebar-w)] min-h-screen bg-surface border-r border-border flex flex-col fixed top-0 left-0 z-50">
       {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <div className="font-bold text-lg tracking-tight text-text">MAMUTE</div>
-        <div className="text-xs text-text-3 mt-0.5">Sistema de ensino</div>
+      <div className="p-6 border-b border-border flex flex-col gap-3">
+        <div>
+          <div className="font-bold text-lg tracking-tight text-text">MAMUTE</div>
+          <div className="text-xs text-text-3 mt-0.5">Sistema de ensino</div>
+        </div>
+
+        {/* Unidade do Professor / Seletor de Unidades */}
+        {profile?.role === 'teacher' && (
+          <div className="mt-0.5">
+            {profile.unit_id ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-2 border border-border text-[10px] font-bold text-text-2 uppercase tracking-wide">
+                🏢 {units.find(u => u.id === profile.unit_id)?.name || 'Carregando...'}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-bold text-text-3 uppercase tracking-wider select-none">Unidade Ativa</label>
+                <select
+                  value={activeUnitId}
+                  onChange={(e) => setActiveUnitId(e.target.value)}
+                  className="w-full px-2 py-1.5 rounded-lg border border-border bg-surface-2 text-text text-xs outline-none cursor-pointer hover:border-text-3 transition-colors font-medium"
+                >
+                  <option value="all">Todas as Unidades</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Nav */}

@@ -14,12 +14,13 @@ export const auth = {
 
 // ─── STUDENTS ────────────────────────────────────────────────────────────────
 export const students = {
-  list: () =>
-    supabase
-      .from('students')
-      .select(`*, modules(*), khan_profiles(*)`)
-      .eq('active', true)
-      .order('name'),
+  list: (unitId) => {
+    let query = supabase.from('students').select(`*, modules(*), khan_profiles(*)`);
+    if (unitId && unitId !== 'all') {
+      query = query.eq('unit_id', unitId);
+    }
+    return query.eq('active', true).order('name');
+  },
 
   get: (id) =>
     supabase
@@ -50,7 +51,7 @@ export const classes = {
     const today = new Date().toISOString().split('T')[0];
     return supabase
       .from('classes')
-      .select(`*, students(name), modules(name, discipline)`)
+      .select(`*, students(name, unit_id), modules(name, discipline)`)
       .eq('date', today)
       .order('students(name)');
   },
@@ -88,7 +89,7 @@ export const schedule = {
   list: () =>
     supabase
       .from('schedules')
-      .select(`*, students(name), modules(name, discipline)`)
+      .select(`*, students(name, unit_id), modules(name, discipline)`)
       .eq('active', true)
       .order('day_of_week')
       .order('start_time'),
@@ -257,7 +258,7 @@ export const payments = {
   listAll: () =>
     supabase
       .from('payments')
-      .select('*, students(name)')
+      .select('*, students(name, unit_id)')
       .order('due_date', { ascending: false }),
 
   create: (data) =>
@@ -268,5 +269,14 @@ export const payments = {
 
   remove: (id) =>
     supabase.from('payments').delete().eq('id', id),
+};
+
+// ─── UNITS ───────────────────────────────────────────────────────────────────
+export const units = {
+  list: () =>
+    supabase
+      .from('units')
+      .select('*')
+      .order('name'),
 };
 

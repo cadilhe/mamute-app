@@ -2,14 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { Modal } from '../shared/Modal';
-import { Input, Textarea } from '../shared/Input';
+import { Input, Select, Textarea } from '../shared/Input';
 import { Button } from '../shared/Button';
 import { students as studentsApi, modules as modulesApi } from '../../lib/api';
 import { useDisciplines } from '../../hooks/useDisciplines';
 import { useToast } from '../shared/Toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useUnits } from '@/hooks/useUnits';
 
 export function EditStudentModal({ open, onClose, student, onSuccess }) {
-  const [form, setForm] = useState({ name: '', age: '', school: '', parent_email: '', notes: '' });
+  const { profile } = useAuth();
+  const { units } = useUnits();
+  const [form, setForm] = useState({ name: '', age: '', school: '', parent_email: '', notes: '', unit_id: '' });
   const [selectedDisciplines, setSelectedDisciplines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +28,7 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
         school: student.school || '',
         parent_email: student.parent_email || '',
         notes: student.notes || '',
+        unit_id: student.unit_id || '',
       });
       setSelectedDisciplines((student.modules || []).map(m => m.discipline));
       setError('');
@@ -55,6 +60,12 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
       setError('Selecione ao menos uma disciplina');
       return;
     }
+    const isGlobalAdmin = profile?.role === 'teacher' && !profile.unit_id;
+    if (isGlobalAdmin && !form.unit_id) {
+      setError('Selecione a unidade do aluno');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -64,6 +75,7 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
       school: form.school || null,
       parent_email: form.parent_email || null,
       notes: form.notes || null,
+      unit_id: isGlobalAdmin ? (form.unit_id || null) : (student.unit_id || profile?.unit_id || null)
     });
 
     if (err) {
@@ -134,6 +146,19 @@ export function EditStudentModal({ open, onClose, student, onSuccess }) {
           onChange={e => set('parent_email', e.target.value)}
           placeholder="pai@email.com"
         />
+        {profile?.role === 'teacher' && !profile.unit_id && (
+          <Select
+            label="Unidade *"
+            value={form.unit_id}
+            onChange={e => set('unit_id', e.target.value)}
+            required
+          >
+            <option value="">Selecione a unidade...</option>
+            {units.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </Select>
+        )}
         <Textarea
           label="Observações"
           value={form.notes}

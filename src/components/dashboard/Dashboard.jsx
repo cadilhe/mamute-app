@@ -9,6 +9,7 @@ import { DisciplineBadge } from '../shared/Badge';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
 import { Loading, ErrorState, EmptyState } from '../shared/Loading';
+import { useUnits } from '@/hooks/useUnits';
 import { LinkParentModal } from '../parents/LinkParentModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,6 +26,7 @@ function StatCard({ label, value, sub, colorClass }) {
 
 export function Dashboard() {
   const { data: students, loading } = useStudents();
+  const { activeUnitId } = useUnits();
   const [todayClasses, setTodayClasses] = useState([]);
   const [todayError, setTodayError] = useState(null);
   const [linkedIds, setLinkedIds] = useState(new Set());
@@ -60,6 +62,11 @@ export function Dashboard() {
 
   const unlinked = students.filter(s => !linkedIds.has(s.id));
 
+  // Filtragem de aulas de hoje pela unidade ativa
+  const filteredTodayClasses = todayClasses.filter(c =>
+    activeUnitId === 'all' || c.students?.unit_id === activeUnitId
+  );
+
   if (!loading && students.length === 0) {
     return (
       <div className="w-full animate-fade-in">
@@ -86,7 +93,7 @@ export function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <StatCard label="Alunos ativos" value={students.length} sub="total na plataforma" />
-        <StatCard label="Aulas hoje" value={todayClasses.length} sub="registradas" colorClass="text-piano" />
+        <StatCard label="Aulas hoje" value={filteredTodayClasses.length} sub="registradas" colorClass="text-piano" />
         <StatCard label="Disciplinas" value={Object.keys(discCounts).length} sub="em andamento" />
       </div>
 
@@ -97,11 +104,11 @@ export function Dashboard() {
           <h2 className="font-semibold text-sm mb-4 text-text">Aulas de Hoje</h2>
           {todayError ? (
             <p className="text-danger text-xs">{todayError}</p>
-          ) : todayClasses.length === 0 ? (
+          ) : filteredTodayClasses.length === 0 ? (
             <p className="text-text-3 text-xs">Nenhuma aula registrada hoje.</p>
           ) : (
             <div className="flex flex-col gap-2">
-              {todayClasses.map(c => (
+              {filteredTodayClasses.map(c => (
                 <div
                   key={c.id}
                   onClick={() => router.push('/alunos/' + c.student_id)}
