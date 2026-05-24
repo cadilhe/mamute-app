@@ -59,6 +59,7 @@ mamute-docs/
 | **Autenticação** | Supabase Auth | Validação de sessão no layout de rota e RLS ativo no banco |
 | **Estilização** | Tailwind CSS v3 | Design dark mode premium via variáveis CSS no `:root` e classes Tailwind |
 | **Datas** | date-fns 3 | Locale `ptBR` para formatação e manipulação de datas |
+| **PWA** | @ducanh2912/next-pwa | Suporte a Progressive Web App para funcionamento offline e instalação |
 | **Deploy** | Vercel | Gerenciador de deploy automático integrado ao GitHub |
 | **Ícones** | lucide-react | Ícones vetoriais modernos |
 
@@ -68,22 +69,20 @@ mamute-docs/
 
 | Módulo | Status |
 |---|---|
-| Autenticação | ✅ Migrado para Next.js |
-| Dashboard | ✅ Migrado para Next.js |
-| Listagem de alunos | ✅ Migrado para Next.js |
-| Cadastro de alunos | ✅ Migrado para Next.js |
-| Detalhe do aluno | ✅ Migrado para Next.js |
-| Registro de aulas | ✅ Migrado para Next.js |
-| Histórico de aulas | ✅ Migrado para Next.js |
-| Visão geral com alertas | ✅ Migrado para Next.js |
-| Agenda semanal | ✅ Migrado para Next.js (read-only) |
-| Portal dos responsáveis | ✅ Migrado para Next.js |
-| Aba Khan Academy | ✅ Migrado para Next.js (read) |
-| Relatórios / PDF | ✅ Migrado para Next.js |
-| Editar aluno | ⏳ Próxima feature |
-| Editar aula | ⏳ Próxima feature |
-| Cadastrar horário na agenda | ⏳ Próxima feature |
-| Atualizar progresso | ⏳ Próxima feature |
-| Configurar Khan Academy | ⏳ Próxima feature |
-| Notificação por email | 🔮 Fase 2 |
-| Financeiro | 🔮 Fase 3 |
+| Autenticação | ✅ Concluído |
+| Dashboard | ✅ Concluído |
+| Listagem de alunos | ✅ Concluído |
+| Cadastro de alunos | ✅ Concluído |
+| Detalhe do aluno | ✅ Concluído (Edição de alunos, aulas e progresso) |
+| Registro de aulas | ✅ Concluído |
+| Histórico de aulas | ✅ Concluído |
+| Visão geral com alertas | ✅ Concluído |
+| Agenda semanal | ✅ Concluído (Visualização, cadastro, edição e remoção de horários) |
+| Portal dos responsáveis | ✅ Concluído |
+| Aba Khan Academy | ✅ Concluído (Configuração e gerenciamento completo de tópicos/subtópicos) |
+| Relatórios / PDF | ✅ Concluído (Download real de PDF) |
+| Notificação por email | ✅ Concluído (Fase 2 - via Edge Function + Resend/SendGrid) |
+| Financeiro | ✅ Concluído (Fase 3 - controle de mensalidades e pagamentos) |
+| Multi-professor | ✅ Concluído (Fase 4 - suporte a professores locais e admin global) |
+| Suporte PWA | ✅ Concluído (Fase 4 - Progressive Web App com suporte offline) |
+

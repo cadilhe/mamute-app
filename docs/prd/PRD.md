@@ -1,5 +1,5 @@
 # PRD — MAMUTE Sistema de Gestão de Ensino
-**Versão:** 1.0 | **Status:** Em desenvolvimento
+**Versão:** 1.0 | **Status:** Concluído (Fases 1, 2, 3 e 4 implementadas)
 
 ---
 
@@ -74,12 +74,15 @@ Plataforma web para professores gerenciarem alunos, aulas, progresso e comunica�
 
 ---
 
-## 4. Fora do escopo (MVP)
-- Pagamentos / financeiro
-- Notificações automáticas por email
-- App mobile nativo
-- Multi-professor
-- API oficial do Khan Academy
+## 4. Escopo Adicional (Pós-MVP)
+
+Os seguintes itens, originalmente definidos fora do escopo do MVP, foram incorporados e implementados com sucesso nas fases adicionais do roadmap:
+- **Pagamentos / Financeiro**: Controle de mensalidades, vencimentos e histórico de pagamentos para os alunos.
+- **Notificações por E-mail**: Disparo automático de e-mails para os responsáveis ao registrar as aulas (via Edge Functions + Resend/SendGrid).
+- **Multi-professor / Unidades**: Suporte a múltiplas unidades de ensino e múltiplos professores vinculados a unidades específicas, além de uma role de Admin Global.
+- **PWA (Progressive Web App)**: Configuração do PWA com suporte a funcionamento offline e instalação.
+
+*Nota:* O aplicativo mobile nativo e a integração com API oficial do Khan Academy (permanece por preenchimento de URL manual) continuam fora do escopo atual do projeto.
 
 ---
 
@@ -93,9 +96,9 @@ Plataforma web para professores gerenciarem alunos, aulas, progresso e comunica�
 
 ## 6. Roadmap
 
-| Fase | Entregas |
-|---|---|
-| 1 — MVP | Auth · Alunos · Aulas · Visão geral · Portal pais · Khan · Relatórios |
-| 2 — Comunicação | Email automático ao responsável após aula registrada |
-| 3 — Financeiro | Mensalidades, histórico de pagamentos |
-| 4 — Escala | Multi-professor, múltiplos professores por unidade |
+| Fase | Entregas | Status |
+|---|---|---|
+| 1 — MVP | Auth · Alunos · Aulas · Visão geral · Portal pais · Khan · Relatórios | ✅ Concluído |
+| 2 — Comunicação | Email automático ao responsável após aula registrada | ✅ Concluído |
+| 3 — Financeiro | Mensalidades, histórico de pagamentos | ✅ Concluído |
+| 4 — Escala | Multi-professor (múltiplas unidades) & PWA offline | ✅ Concluído |

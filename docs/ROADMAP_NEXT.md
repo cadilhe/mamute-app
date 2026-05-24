@@ -15,4 +15,4 @@
 ## Longo prazo (PRD Fase 3+)
 - [x] Financeiro: mensalidades, histórico de pagamentos
 - [x] Multi-professor: suporte a mais de um professor por unidade
-- [] PWA: Progressive Web App para acesso offline
+- [x] PWA: Progressive Web App para acesso offline

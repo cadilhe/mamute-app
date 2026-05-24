@@ -24,9 +24,9 @@ Guia completo para configurar o ambiente de desenvolvimento e produção do zero
 
 ### 1.2 Rodar o schema
 1. No menu lateral: SQL Editor → New query
-2. Cole o conteúdo de [DATABASE_SCHEMA.md](file:///d:/projects/react_projects/mamute-app/docs/architecture/DATABASE_SCHEMA.md) (seção SQL Completo)
+2. Cole o conteúdo do script consolidado [NEW_DATABASE_SCHEMA.sql](file:///d:/projects/react_projects/mamute-app/docs/architecture/NEW_DATABASE_SCHEMA.sql)
 3. Execute com Run (Ctrl+Enter)
-4. Verifique em Table Editor: devem aparecer ~11 tabelas
+4. Verifique em Table Editor: devem aparecer as tabelas (`units`, `disciplines`, `profiles`, `students`, `modules`, `classes`, `schedules`, `progress`, `reports`, `khan_profiles`, `khan_topics`, `khan_subtopics`, `parent_student`, `payments`)
 
 ### 1.3 Pegar credenciais
 Project Settings → API:
@@ -53,7 +53,9 @@ Crie o arquivo `.env` na raiz do projeto (copie do `.env.example`):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key-aqui
 ```
+*Nota:* A chave `SUPABASE_SERVICE_ROLE_KEY` é necessária no servidor para gerenciar contas de usuários (professores/responsáveis) através da API administrativa.
 
 ### 2.3 Rodar em desenvolvimento
 ```bash
@@ -81,8 +83,9 @@ git push -u origin main
 2. Selecione o repositório `mamute-app`
 3. Framework Preset: **Next.js** (autodetectado)
 4. Em Environment Variables, adicione:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - `NEXT_PUBLIC_SUPABASE_URL`
+    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - `SUPABASE_SERVICE_ROLE_KEY`
 5. Deploy
 
 Após o deploy, o Vercel fornece uma URL pública (ex: `mamute-app.vercel.app`).
@@ -114,18 +117,20 @@ O sistema detecta o role `'parent'` e renderiza o Portal dos Pais (/pais).
 
 ## 5. Variáveis de ambiente — referência completa
 
-| Variável | Obrigatória | Onde pegar |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Sim | Supabase → Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Supabase → Project Settings → API |
+| Variável | Obrigatória | Onde pegar | Descrição |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Sim | Supabase → Project Settings → API | URL base do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Supabase → Project Settings → API | Chave pública anônima para requisições do cliente |
+| `SUPABASE_SERVICE_ROLE_KEY` | Sim (servidor) | Supabase → Project Settings → API | Chave privada de serviço com bypass de RLS (usada para gerenciar usuários) |
 
 ---
 
 ## 6. Troubleshooting
 
-### "Variáveis de ambiente não configuradas"
+### "Variáveis de ambiente não configuradas no servidor" ou "Variáveis de ambiente do Supabase não configuradas"
 → Verifique se o arquivo `.env` existe na raiz (mesmo nível de `package.json`)
-→ Reinicie o servidor de desenvolvimento após criar/editar o `.env`
+→ Certifique-se de que a variável `SUPABASE_SERVICE_ROLE_KEY` está configurada
+→ Reinicie o servidor de desenvolvimento (Ctrl + C no terminal, depois `npm run dev`) após criar ou editar o `.env`
 
 ### Login não funciona
 → Verifique se o usuário foi criado em Authentication → Users

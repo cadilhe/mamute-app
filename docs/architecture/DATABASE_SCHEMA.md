@@ -3,388 +3,396 @@
 Schema completo do banco de dados PostgreSQL no Supabase.
 
 ---
-
 ## Diagrama de relacionamentos
 
 ```
-auth.users (Supabase Auth)
-    │
-    └── profiles (1:1)
-           │
-           ├── [role=teacher] → acessa tudo
-           │
-           └── [role=parent] → parent_student → students
-                                                    │
-                                      ┌─────────────┼─────────────────┐
-                                      │             │                 │
-                                   modules       classes           progress
-                                      │
-                                   schedules
-                                      │
-                                 khan_profiles
-                                      │
-                                  khan_topics
-                                      │
-                                khan_subtopics
+      ┌──────────────────────────────────────────┐
+      │                  units                   │ (Unidades de Ensino)
+      └─────────┬──────────────────────┬─────────┘
+                │ (1:N)                │ (1:N)
+                ▼                      ▼
+           profiles ◄──(1:1)──► auth.users (Supabase Auth)
+                │
+                ├── [role=teacher] (se unit_id for nulo: admin global; senão: local)
+                │
+                └── [role=parent] ── parent_student (vínculo de responsabilidade)
+                                            │
+                                            ▼
+                                         students (Alunos)
+                                            │
+                             ┌──────────────┼──────────────┬──────────────┐
+                             │              │              │              │
+                          payments       modules        classes        progress
+                        (Financeiro)        │          (Aulas)      (Progresso)
+                                            ├── disciplines
+                                            │
+                                         schedules
+                                            │
+                                       khan_profiles
+                                            │
+                                       khan_topics
+                                            │
+                                      khan_subtopics
 ```
 
 ---
 
 ## SQL Completo
 
-### profiles
+Abaixo está o script SQL consolidado que define a estrutura de tabelas, índices e Row Level Security (RLS) do MAMUTE:
+
 ```sql
-CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  role TEXT NOT NULL DEFAULT 'teacher' CHECK (role IN ('teacher', 'parent')),
-  created_at TIMESTAMPTZ DEFAULT now()
+-- ============================================================================
+-- MAMUTE - CONSOLIDATED DATABASE SCHEMA
+-- This schema represents the complete structure of the application database,
+-- including the modules of students, scheduling, Khan Academy, billing/payments,
+-- teaching units, user profiles, and Row Level Security (RLS) policies.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 1. BASE TABLES (No Foreign Key dependencies)
+-- ----------------------------------------------------------------------------
+
+-- Teaching units (schools/franchises)
+CREATE TABLE public.units (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT units_pkey PRIMARY KEY (id)
 );
 
--- Auto-criar profile após signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', 
-          COALESCE(new.raw_user_meta_data->>'role', 'teacher'));
-  RETURN new;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
-
-### students
-```sql
-CREATE TABLE students (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  age INTEGER,
-  school TEXT,
-  parent_email TEXT,
-  active BOOLEAN DEFAULT true,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### modules
-```sql
-CREATE TABLE modules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  discipline TEXT NOT NULL CHECK (discipline IN (
-    'piano', 'robotica', 'matematica', 'ingles', 'bateria', 'reforco'
-  )),
-  name TEXT NOT NULL,
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### classes
-```sql
-CREATE TABLE classes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  module_id UUID REFERENCES modules(id),
-  date DATE NOT NULL DEFAULT CURRENT_DATE,
-  content TEXT,
-  pending TEXT,
-  next_step TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+-- Disciplines offered (e.g. Piano, Robotics, Math)
+CREATE TABLE public.disciplines (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  label text NOT NULL,
+  color text NOT NULL,
+  bg_color text NOT NULL,
+  active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT disciplines_pkey PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_classes_student_id ON classes(student_id);
-CREATE INDEX idx_classes_date ON classes(date);
-```
+-- ----------------------------------------------------------------------------
+-- 2. CORE SYSTEM TABLES
+-- ----------------------------------------------------------------------------
 
-### progress
-```sql
-CREATE TABLE progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  discipline TEXT NOT NULL,
-  percent INTEGER DEFAULT 0 CHECK (percent BETWEEN 0 AND 100),
-  notes TEXT,
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(student_id, discipline)
+-- User Profiles (Teachers, Global Admins, Parents)
+-- Linked to Supabase Auth internal table auth.users
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  full_name text,
+  role text NOT NULL DEFAULT 'teacher'::text CHECK (role = ANY (ARRAY['teacher'::text, 'parent'::text])),
+  email text,
+  unit_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT profiles_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id) ON DELETE SET NULL
+);
+
+-- Students list
+CREATE TABLE public.students (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  age integer,
+  school text,
+  parent_email text,
+  active boolean DEFAULT true,
+  notes text,
+  monthly_fee numeric(10, 2) DEFAULT 0.00,
+  due_day integer CHECK (due_day BETWEEN 1 AND 31),
+  unit_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT students_pkey PRIMARY KEY (id),
+  CONSTRAINT students_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id) ON DELETE SET NULL
+);
+
+-- ----------------------------------------------------------------------------
+-- 3. ACADEMIC AND CLASS LOGS MODULES
+-- ----------------------------------------------------------------------------
+
+-- Academic modules associated to students and disciplines
+CREATE TABLE public.modules (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  discipline text NOT NULL,
+  name text NOT NULL,
+  active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT modules_pkey PRIMARY KEY (id),
+  CONSTRAINT modules_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_modules_discipline FOREIGN KEY (discipline) REFERENCES public.disciplines(key) ON DELETE RESTRICT
+);
+
+-- Classes / daily activity records
+CREATE TABLE public.classes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  module_id uuid,
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  content text,
+  pending text,
+  next_step text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT classes_pkey PRIMARY KEY (id),
+  CONSTRAINT classes_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE,
+  CONSTRAINT classes_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.modules(id) ON DELETE SET NULL
+);
+
+-- Class schedules / weekly grid
+CREATE TABLE public.schedules (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  module_id uuid,
+  day_of_week integer NOT NULL CHECK (day_of_week >= 1 AND day_of_week <= 7),
+  start_time time without time zone NOT NULL,
+  end_time time without time zone,
+  active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT schedules_pkey PRIMARY KEY (id),
+  CONSTRAINT schedules_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE,
+  CONSTRAINT schedules_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.modules(id) ON DELETE SET NULL
+);
+
+-- Student academic progress metrics per discipline
+CREATE TABLE public.progress (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  discipline text NOT NULL,
+  percent integer DEFAULT 0 CHECK (percent >= 0 AND percent <= 100),
+  notes text,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT progress_pkey PRIMARY KEY (id),
+  CONSTRAINT progress_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE
+);
+
+-- Generated class and progress reports
+CREATE TABLE public.reports (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  type text DEFAULT 'full'::text,
+  content jsonb,
+  generated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT reports_pkey PRIMARY KEY (id),
+  CONSTRAINT reports_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE
+);
+
+-- ----------------------------------------------------------------------------
+-- 4. KHAN ACADEMY TRACKING MODULES
+-- ----------------------------------------------------------------------------
+
+-- Khan Academy student profiles
+CREATE TABLE public.khan_profiles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL UNIQUE,
+  khan_username text,
+  profile_url text,
+  streak_days integer DEFAULT 0,
+  minutes_week integer DEFAULT 0,
+  last_activity date,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT khan_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT khan_profiles_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE
+);
+
+-- Khan Academy topics tracked for a profile
+CREATE TABLE public.khan_topics (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  khan_profile_id uuid NOT NULL,
+  name text NOT NULL,
+  url text,
+  progress integer DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+  "order" integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT khan_topics_pkey PRIMARY KEY (id),
+  CONSTRAINT khan_topics_khan_profile_id_fkey FOREIGN KEY (khan_profile_id) REFERENCES public.khan_profiles(id) ON DELETE CASCADE
+);
+
+-- Khan Academy subtopics/skills completed under a topic
+CREATE TABLE public.khan_subtopics (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  khan_topic_id uuid NOT NULL,
+  name text NOT NULL,
+  url text,
+  completed boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT khan_subtopics_pkey PRIMARY KEY (id),
+  CONSTRAINT khan_subtopics_khan_topic_id_fkey FOREIGN KEY (khan_topic_id) REFERENCES public.khan_topics(id) ON DELETE CASCADE
+);
+
+-- ----------------------------------------------------------------------------
+-- 5. RELATIONSHIP AND BILLING MODULES
+-- ----------------------------------------------------------------------------
+
+-- Associative table: parent-to-student links
+CREATE TABLE public.parent_student (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  parent_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT parent_student_pkey PRIMARY KEY (id),
+  CONSTRAINT parent_student_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT parent_student_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE,
+  CONSTRAINT parent_student_unique UNIQUE (parent_id, student_id)
+);
+
+-- Payments and monthly fees history
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  due_date date NOT NULL,
+  amount numeric(10, 2) NOT NULL,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['paid'::text, 'pending'::text, 'overdue'::text])),
+  paid_at date,
+  amount_paid numeric(10, 2),
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE
+);
+
+-- ----------------------------------------------------------------------------
+-- 6. INDEXES FOR PERFORMANCE
+-- ----------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_unit_id ON public.profiles(unit_id);
+CREATE INDEX IF NOT EXISTS idx_students_unit_id ON public.students(unit_id);
+CREATE INDEX IF NOT EXISTS idx_payments_student_id ON public.payments(student_id);
+CREATE INDEX IF NOT EXISTS idx_payments_due_date ON public.payments(due_date);
+CREATE INDEX IF NOT EXISTS idx_classes_student_id ON public.classes(student_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_student_id ON public.schedules(student_id);
+
+-- ----------------------------------------------------------------------------
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES
+-- ----------------------------------------------------------------------------
+
+-- Enable Row Level Security (RLS) on all tables
+ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.disciplines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.khan_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.khan_topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.khan_subtopics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parent_student ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+-- --- POLICIES FOR public.units ---
+CREATE POLICY "units_read_all" ON public.units FOR SELECT TO authenticated USING (true);
+CREATE POLICY "units_admin_all" ON public.units FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher' AND unit_id IS NULL)
+);
+
+-- --- POLICIES FOR public.disciplines ---
+CREATE POLICY "disciplines_read_all" ON public.disciplines FOR SELECT TO authenticated USING (true);
+CREATE POLICY "disciplines_admin_all" ON public.disciplines FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher')
+);
+
+-- --- POLICIES FOR public.profiles ---
+CREATE POLICY "profiles_read_all" ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "profiles_self_update" ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid());
+CREATE POLICY "admin_insert_profiles" ON public.profiles FOR INSERT TO authenticated WITH CHECK (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher' AND unit_id IS NULL)
+);
+CREATE POLICY "admin_update_profiles" ON public.profiles FOR UPDATE TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher' AND unit_id IS NULL)
+);
+CREATE POLICY "admin_delete_profiles" ON public.profiles FOR DELETE TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher' AND unit_id IS NULL)
+);
+
+-- --- POLICIES FOR public.students ---
+CREATE POLICY "teacher_unit_students" ON public.students FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = students.unit_id))
+);
+CREATE POLICY "parent_own_students" ON public.students FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.modules ---
+CREATE POLICY "teacher_unit_modules" ON public.modules FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_modules" ON public.modules FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.classes ---
+CREATE POLICY "teacher_unit_classes" ON public.classes FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_classes" ON public.classes FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.schedules ---
+CREATE POLICY "teacher_unit_schedules" ON public.schedules FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_schedules" ON public.schedules FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.progress ---
+CREATE POLICY "teacher_unit_progress" ON public.progress FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_progress" ON public.progress FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.reports ---
+CREATE POLICY "teacher_unit_reports" ON public.reports FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_reports" ON public.reports FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.payments ---
+CREATE POLICY "teacher_unit_payments" ON public.payments FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_payments" ON public.payments FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+-- --- POLICIES FOR public.parent_student ---
+CREATE POLICY "teacher_all_links" ON public.parent_student FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'teacher')
+);
+CREATE POLICY "parent_own_links" ON public.parent_student FOR SELECT TO authenticated USING (parent_id = auth.uid());
+
+-- --- POLICIES FOR public.khan_profiles, khan_topics, khan_subtopics ---
+CREATE POLICY "teacher_unit_khan_p" ON public.khan_profiles FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.students s ON s.id = student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_khan_p" ON public.khan_profiles FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps WHERE ps.student_id = student_id AND ps.parent_id = auth.uid())
+);
+
+CREATE POLICY "teacher_unit_khan_t" ON public.khan_topics FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.khan_profiles kp ON kp.id = khan_profile_id JOIN public.students s ON s.id = kp.student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_khan_t" ON public.khan_topics FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps JOIN public.khan_profiles kp ON kp.student_id = ps.student_id WHERE kp.id = khan_profile_id AND ps.parent_id = auth.uid())
+);
+
+CREATE POLICY "teacher_unit_khan_st" ON public.khan_subtopics FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.profiles p JOIN public.khan_topics kt ON kt.id = khan_topic_id JOIN public.khan_profiles kp ON kp.id = kt.khan_profile_id JOIN public.students s ON s.id = kp.student_id WHERE p.id = auth.uid() AND p.role = 'teacher' AND (p.unit_id IS NULL OR p.unit_id = s.unit_id))
+);
+CREATE POLICY "parent_own_khan_st" ON public.khan_subtopics FOR SELECT TO authenticated USING (
+  EXISTS (SELECT 1 FROM public.parent_student ps JOIN public.khan_profiles kp ON kp.student_id = ps.student_id JOIN public.khan_topics kt ON kt.khan_profile_id = kp.id WHERE kt.id = khan_topic_id AND ps.parent_id = auth.uid())
 );
 ```
-
-### schedules
-```sql
-CREATE TABLE schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  module_id UUID REFERENCES modules(id),
-  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
-  -- 1=segunda, 2=terça, ..., 6=sábado, 7=domingo
-  start_time TIME NOT NULL,
-  end_time TIME,
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### parent_student
-```sql
-CREATE TABLE parent_student (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(parent_id, student_id)
-);
-```
-
-### khan_profiles
-```sql
-CREATE TABLE khan_profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  khan_username TEXT,
-  profile_url TEXT,
-  streak_days INTEGER DEFAULT 0,
-  minutes_week INTEGER DEFAULT 0,
-  last_activity DATE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(student_id)
-);
-```
-
-### khan_topics
-```sql
-CREATE TABLE khan_topics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  khan_profile_id UUID NOT NULL REFERENCES khan_profiles(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  url TEXT,
-  progress INTEGER DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
-  "order" INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### khan_subtopics
-```sql
-CREATE TABLE khan_subtopics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  khan_topic_id UUID NOT NULL REFERENCES khan_topics(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  url TEXT,
-  completed BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### reports
-```sql
-CREATE TABLE reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-  type TEXT DEFAULT 'full',
-  content JSONB,
-  generated_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
----
-
-## Views
-
-### student_overview
-```sql
-CREATE OR REPLACE VIEW student_overview AS
-SELECT
-  s.id,
-  s.name,
-  s.age,
-  s.school,
-  s.active,
-  CURRENT_DATE - MAX(c.date) AS days_since_last_class,
-  MAX(c.date) AS last_class_date,
-  COUNT(CASE WHEN c.pending IS NOT NULL AND c.pending <> '' THEN 1 END) AS pending_count
-FROM students s
-LEFT JOIN classes c ON c.student_id = s.id
-WHERE s.active = true
-GROUP BY s.id, s.name, s.age, s.school, s.active;
-```
-
-### last_class_per_module
-```sql
-CREATE OR REPLACE VIEW last_class_per_module AS
-SELECT DISTINCT ON (c.student_id, c.module_id)
-  c.id,
-  c.student_id,
-  c.module_id,
-  c.date,
-  c.content,
-  c.pending,
-  c.next_step,
-  m.discipline,
-  m.name AS module_name
-FROM classes c
-JOIN modules m ON m.id = c.module_id
-ORDER BY c.student_id, c.module_id, c.date DESC;
-```
-
----
-
-## Row Level Security
-
-```sql
--- Habilitar RLS em todas as tabelas
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE students ENABLE ROW LEVEL SECURITY;
-ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE parent_student ENABLE ROW LEVEL SECURITY;
-ALTER TABLE khan_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE khan_topics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE khan_subtopics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
-
--- 1. PROFILES (Permite a leitura geral para usuários autenticados e edição apenas do próprio)
-CREATE POLICY "profiles_select" ON profiles
-  FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "profiles_update" ON profiles
-  FOR UPDATE TO authenticated
-  USING (auth.uid() = id);
-
--- 2. STUDENTS
-CREATE POLICY "teacher_all" ON students
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_children" ON students
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = students.id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 3. MODULES
-CREATE POLICY "teacher_all" ON modules
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_modules" ON modules
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = modules.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 4. CLASSES
-CREATE POLICY "teacher_all" ON classes
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_classes" ON classes
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = classes.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 5. PROGRESS
-CREATE POLICY "teacher_all" ON progress
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_progress" ON progress
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = progress.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 6. SCHEDULES
-CREATE POLICY "teacher_all" ON schedules
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_schedules" ON schedules
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = schedules.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 7. PARENT_STUDENT
-CREATE POLICY "teacher_all" ON parent_student
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_relationship" ON parent_student
-  FOR SELECT TO authenticated
-  USING (parent_id = auth.uid());
-
--- 8. KHAN_PROFILES
-CREATE POLICY "teacher_all" ON khan_profiles
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_khan_profiles" ON khan_profiles
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE ps.student_id = khan_profiles.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 9. KHAN_TOPICS
-CREATE POLICY "teacher_all" ON khan_topics
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_khan_topics" ON khan_topics
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM khan_profiles kp
-    JOIN parent_student ps ON ps.student_id = kp.student_id
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE kp.id = khan_topics.khan_profile_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 10. KHAN_SUBTOPICS
-CREATE POLICY "teacher_all" ON khan_subtopics
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_khan_subtopics" ON khan_subtopics
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM khan_topics kt
-    JOIN khan_profiles kp ON kp.id = kt.khan_profile_id
-    JOIN parent_student ps ON ps.student_id = kp.student_id
-    JOIN profiles p ON p.id = auth.uid()
-    WHERE kt.id = khan_subtopics.khan_topic_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
-  ));
-
--- 11. REPORTS
-CREATE POLICY "teacher_all" ON reports
-  FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'));
-
-CREATE POLICY "parent_own_reports" ON reports
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM parent_student ps
-    JOIN profiles p ON p.id = auth.uid()
+ p.id = auth.uid()
     WHERE ps.student_id = reports.student_id AND ps.parent_id = auth.uid() AND p.role = 'parent'
   ));
 ```
