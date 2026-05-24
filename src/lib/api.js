@@ -189,7 +189,7 @@ export const parents = {
   getChildren: (parentId) =>
     supabase
       .from('parent_student')
-      .select(`students(*, modules(*), classes(*), khan_profiles(*), progress(*))`)
+      .select(`students(*, modules(*), classes(*), khan_profiles(*), progress(*), payments(*))`)
       .eq('parent_id', parentId),
 
   list: () =>
@@ -243,5 +243,30 @@ export const parents = {
 // ─── FUNCTIONS / NOTIFICATIONS ───────────────────────────────────────────────
 export const notifications = {
   sendClassEmail: (data) => supabase.functions.invoke('send-class-email', { body: data }),
+};
+
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+export const payments = {
+  listByStudent: (studentId) =>
+    supabase
+      .from('payments')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('due_date', { ascending: false }),
+
+  listAll: () =>
+    supabase
+      .from('payments')
+      .select('*, students(name)')
+      .order('due_date', { ascending: false }),
+
+  create: (data) =>
+    supabase.from('payments').insert(data).select().single(),
+
+  update: (id, data) =>
+    supabase.from('payments').update(data).eq('id', id).select().single(),
+
+  remove: (id) =>
+    supabase.from('payments').delete().eq('id', id),
 };
 

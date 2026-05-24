@@ -9,6 +9,7 @@ const NAV = [
   { href: '/alunos', icon: '◈', label: 'Alunos' },
   { href: '/agenda', icon: '◎', label: 'Agenda' },
   { href: '/visao-geral', icon: '◉', label: 'Visão Geral' },
+  { href: '/financeiro', icon: '¤', label: 'Financeiro' },
   { href: '/disciplinas', icon: '◆', label: 'Disciplinas' },
 ];
 
@@ -26,7 +27,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-4 flex flex-col gap-0.5">
-        {NAV.map(({ href, icon, label, alert }) => {
+        {profile?.role === 'teacher' && NAV.map(({ href, icon, label, alert }) => {
           const isActive = pathname === href || (href !== '/' && pathname?.startsWith(href));
           return (
             <Link
@@ -46,20 +47,22 @@ export function Sidebar() {
             </Link>
           );
         })}
-        <div className="h-px bg-border my-2 mx-5" />
+        {profile?.role === 'teacher' && <div className="h-px bg-border my-2 mx-5" />}
         
         {/* Portal dos Pais */}
-        <Link
-          href="/pais"
-          className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all ${
-            pathname === '/pais'
-              ? 'text-text bg-surface-2 font-semibold'
-              : 'text-text-2 hover:bg-surface-2/40 font-normal'
-          }`}
-        >
-          <span className="text-base">♡</span>
-          Portal dos Pais
-        </Link>
+        {profile?.role === 'parent' && (
+          <Link
+            href="/pais"
+            className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all ${
+              pathname === '/pais'
+                ? 'text-text bg-surface-2 font-semibold'
+                : 'text-text-2 hover:bg-surface-2/40 font-normal'
+            }`}
+          >
+            <span className="text-base">♡</span>
+            Portal dos Pais
+          </Link>
+        )}
       </nav>
 
       {/* User */}

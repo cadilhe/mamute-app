@@ -16,10 +16,11 @@ import { EditClassModal } from './EditClassModal';
 import { KhanTab } from '../khan/KhanTab';
 import { ReportModal } from '../reports/ReportModal';
 import { LinkParentModal } from '../parents/LinkParentModal';
+import { FinanceTab } from './FinanceTab';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy'];
+const TABS = ['Hoje', 'Histórico', 'Progresso', 'Khan Academy', 'Financeiro'];
 
 function ProgressCard({ studentId, discipline, existingPercent, existingNotes }) {
   const [percent, setPercent] = useState(existingPercent || 0);
@@ -276,6 +277,15 @@ export function StudentDetail() {
 
       {/* Tab: Khan */}
       {tab === 'Khan Academy' && <KhanTab studentId={id} />}
+
+      {/* Tab: Financeiro */}
+      {tab === 'Financeiro' && (
+        <FinanceTab
+          studentId={id}
+          student={student}
+          onStudentUpdate={refetchStudent}
+        />
+      )}
 
       {/* Modals */}
       <RegisterClassModal

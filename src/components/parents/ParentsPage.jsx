@@ -8,6 +8,19 @@ import { Loading, EmptyState, ErrorState } from '../shared/Loading';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+function formatCurrency(value) {
+  if (value === undefined || value === null) return 'R$ 0,00';
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const [year, month, day] = parts;
+  return `${day}/${month}/${year}`;
+}
+
 export function ParentsPage() {
   const { user } = useAuth();
   const [children, setChildren] = useState([]);
@@ -153,6 +166,62 @@ export function ParentsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Financeiro */}
+          <div className="bg-surface rounded-xl border border-border p-5">
+            <div className="text-[10px] font-bold text-text-3 tracking-wider uppercase mb-3 select-none">
+              Histórico Financeiro
+            </div>
+            {(!s.payments || s.payments.length === 0) ? (
+              <p className="text-text-3 text-sm">Nenhum registro financeiro encontrado.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-text-2 bg-surface-2/20">
+                      <th className="px-3 py-2 font-bold select-none">Vencimento</th>
+                      <th className="px-3 py-2 font-bold select-none">Valor</th>
+                      <th className="px-3 py-2 font-bold select-none">Status</th>
+                      <th className="px-3 py-2 font-bold select-none">Pago Em</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {[...s.payments]
+                      .sort((a, b) => new Date(b.due_date) - new Date(a.due_date))
+                      .map((p) => {
+                        let statusBadge = '';
+                        if (p.status === 'paid') {
+                          statusBadge = 'bg-success-bg/40 text-success border-success/20';
+                        } else if (p.status === 'pending') {
+                          statusBadge = 'bg-warning-bg/40 text-warning border-warning/20';
+                        } else {
+                          statusBadge = 'bg-danger-bg/40 text-danger border-danger/20';
+                        }
+
+                        return (
+                          <tr key={p.id} className="hover:bg-surface-2/10">
+                            <td className="px-3 py-2.5 font-semibold text-text whitespace-nowrap">
+                              {formatDate(p.due_date)}
+                            </td>
+                            <td className="px-3 py-2.5 text-text-2 whitespace-nowrap">
+                              {formatCurrency(p.amount)}
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-full border text-[9px] font-bold select-none capitalize ${statusBadge}`}>
+                                {p.status === 'paid' ? 'pago' : p.status === 'pending' ? 'pendente' : 'atrasado'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-text-3 whitespace-nowrap">
+                              {p.status === 'paid' ? formatDate(p.paid_at) : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
