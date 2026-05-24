@@ -14,8 +14,8 @@ BEGIN;
 -- ============================================================================
 INSERT INTO public.units (id, name)
 VALUES 
-  ('u0000000-0000-0000-0000-000000000001', 'Unidade Centro'),
-  ('u0000000-0000-0000-0000-000000000002', 'Unidade Sul')
+  ('a0000000-0000-0000-0000-000000000001', 'Unidade Centro'),
+  ('a0000000-0000-0000-0000-000000000002', 'Unidade Sul')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -39,6 +39,11 @@ INSERT INTO public.profiles (id, full_name, role, email, unit_id)
 VALUES ('aa8065b3-af14-4a57-be43-4dae9809672d', 'Carlos Cadilhe', 'teacher', 'carlos.cadilhe@gmail.com', NULL)
 ON CONFLICT (id) DO UPDATE SET role = 'teacher', full_name = 'Carlos Cadilhe', email = 'carlos.cadilhe@gmail.com', unit_id = NULL;
 
+-- Fernando (Super-Admin/Global)
+INSERT INTO public.profiles (id, full_name, role, email, unit_id)
+VALUES ('10557044-0336-4594-b5cb-dda133fffd5e', 'Fernando', 'teacher', 'fernando@escolamamute.com.br', NULL)
+ON CONFLICT (id) DO UPDATE SET role = 'teacher', full_name = 'Fernando', email = 'fernando@escolamamute.com.br', unit_id = NULL;
+
 -- Professor Centro (Local Centro)
 INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password,
                         raw_app_meta_data, raw_user_meta_data, email_confirmed_at,
@@ -51,8 +56,8 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.profiles (id, full_name, role, email, unit_id)
-VALUES ('aa8065b3-af14-4a57-be43-4dae9809672e', 'Professor Centro', 'teacher', 'professor.centro@email.com', 'u0000000-0000-0000-0000-000000000001')
-ON CONFLICT (id) DO UPDATE SET role = 'teacher', full_name = 'Professor Centro', email = 'professor.centro@email.com', unit_id = 'u0000000-0000-0000-0000-000000000001';
+VALUES ('aa8065b3-af14-4a57-be43-4dae9809672e', 'Professor Centro', 'teacher', 'professor.centro@email.com', 'a0000000-0000-0000-0000-000000000001')
+ON CONFLICT (id) DO UPDATE SET role = 'teacher', full_name = 'Professor Centro', email = 'professor.centro@email.com', unit_id = 'a0000000-0000-0000-0000-000000000001';
 
 -- ============================================================================
 -- 4. Dummy parent auth.users (will auto-create profiles through trigger)
@@ -105,16 +110,16 @@ UPDATE public.profiles SET email = 'roberto.alves@email.com' WHERE id = 'b000000
 -- ============================================================================
 INSERT INTO public.students (id, name, age, school, parent_email, active, notes, monthly_fee, due_day, unit_id)
 VALUES
-  ('c0000000-0000-0000-0000-000000000001', 'Lucas Silva',       8,  'Escola Municipal Santos Dumont', 'ana.silva@email.com',     true,  'Gosta muito de piano, tem facilidade com música', 350.00, 10, 'u0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000002', 'Julia Silva',       10, 'Escola Municipal Santos Dumont', 'ana.silva@email.com',     true,  'Dificuldade em matemática, precisa de reforço em inglês', 350.00, 10, 'u0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000003', 'Gabriel Santos',    7,  'Colégio São José',               'pedro.santos@email.com',  true,  'Adora robótica, muito criativo', 400.00, 5, 'u0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000004', 'Sofia Santos',      12, 'Colégio São José',               'pedro.santos@email.com',  true,  'Focada, quer aprender bateria', 450.00, 5, 'u0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000005', 'Miguel Costa',      9,  'Escola Nova Geração',            'mariana.costa@email.com', true,  'Curioso, começou robótica recentemente', 380.00, 15, 'u0000000-0000-0000-0000-000000000002'),
-  ('c0000000-0000-0000-0000-000000000006', 'Laura Costa',       11, 'Escola Nova Geração',            'mariana.costa@email.com', true,  'Boa aluna, dedicada aos estudos', 380.00, 15, 'u0000000-0000-0000-0000-000000000002'),
-  ('c0000000-0000-0000-0000-000000000007', 'Pedro Oliveira',    6,  'Escola Infantil Pequeno Mundo',  'joao.oliveira@email.com', true,  'O mais novo da turma, muita energia', 320.00, 20, 'u0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000008', 'Beatriz Lima',      13, 'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Preparação para vestibular, foco em matemática e inglês', 480.00, 10, 'u0000000-0000-0000-0000-000000000002'),
-  ('c0000000-0000-0000-0000-000000000009', 'Rafael Lima',       8,  'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Hiperativo, bateria ajuda na concentração', 420.00, 10, 'u0000000-0000-0000-0000-000000000002'),
-  ('c0000000-0000-0000-0000-000000000010', 'Alice Alves',       15, 'Instituto Federal',               'roberto.alves@email.com', true,  'Quer seguir carreira em tecnologia', 500.00, 25, 'u0000000-0000-0000-0000-000000000001')
+  ('c0000000-0000-0000-0000-000000000001', 'Lucas Silva',       8,  'Escola Municipal Santos Dumont', 'ana.silva@email.com',     true,  'Gosta muito de piano, tem facilidade com música', 350.00, 10, 'a0000000-0000-0000-0000-000000000001'),
+  ('c0000000-0000-0000-0000-000000000002', 'Julia Silva',       10, 'Escola Municipal Santos Dumont', 'ana.silva@email.com',     true,  'Dificuldade em matemática, precisa de reforço em inglês', 350.00, 10, 'a0000000-0000-0000-0000-000000000001'),
+  ('c0000000-0000-0000-0000-000000000003', 'Gabriel Santos',    7,  'Colégio São José',               'pedro.santos@email.com',  true,  'Adora robótica, muito criativo', 400.00, 5, 'a0000000-0000-0000-0000-000000000001'),
+  ('c0000000-0000-0000-0000-000000000004', 'Sofia Santos',      12, 'Colégio São José',               'pedro.santos@email.com',  true,  'Focada, quer aprender bateria', 450.00, 5, 'a0000000-0000-0000-0000-000000000001'),
+  ('c0000000-0000-0000-0000-000000000005', 'Miguel Costa',      9,  'Escola Nova Geração',            'mariana.costa@email.com', true,  'Curioso, começou robótica recentemente', 380.00, 15, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000006', 'Laura Costa',       11, 'Escola Nova Geração',            'mariana.costa@email.com', true,  'Boa aluna, dedicada aos estudos', 380.00, 15, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000007', 'Pedro Oliveira',    6,  'Escola Infantil Pequeno Mundo',  'joao.oliveira@email.com', true,  'O mais novo da turma, muita energia', 320.00, 20, 'a0000000-0000-0000-0000-000000000001'),
+  ('c0000000-0000-0000-0000-000000000008', 'Beatriz Lima',      13, 'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Preparação para vestibular, foco em matemática e inglês', 480.00, 10, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000009', 'Rafael Lima',       8,  'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Hiperativo, bateria ajuda na concentration', 420.00, 10, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000010', 'Alice Alves',       15, 'Instituto Federal',               'roberto.alves@email.com', true,  'Quer seguir carreira em tecnologia', 500.00, 25, 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name, age = EXCLUDED.age, school = EXCLUDED.school, 
   parent_email = EXCLUDED.parent_email, active = EXCLUDED.active, notes = EXCLUDED.notes,
