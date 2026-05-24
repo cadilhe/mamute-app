@@ -79,6 +79,19 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {profile?.role === 'teacher' && !profile.unit_id && (
+          <Link
+            href="/usuarios"
+            className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-all relative ${
+              pathname === '/usuarios' || pathname?.startsWith('/usuarios')
+                ? 'text-text bg-surface-2 font-semibold'
+                : 'text-text-2 hover:bg-surface-2/40 font-normal'
+            }`}
+          >
+            <span className="text-base">👥</span>
+            Usuários
+          </Link>
+        )}
         {profile?.role === 'teacher' && <div className="h-px bg-border my-2 mx-5" />}
         
         {/* Portal dos Pais */}
