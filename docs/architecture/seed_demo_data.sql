@@ -55,6 +55,13 @@ VALUES
    '{"full_name":"Professor Centro","role":"teacher"}'::jsonb, now(), now(), now())
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+VALUES
+  ('aa8065b3-af14-4a57-be43-4dae9809672e', 'aa8065b3-af14-4a57-be43-4dae9809672e', 
+   jsonb_build_object('sub', 'aa8065b3-af14-4a57-be43-4dae9809672e', 'email', 'professor.centro@email.com'), 
+   'email', 'professor.centro@email.com', now(), now(), now())
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO public.profiles (id, full_name, role, email, unit_id)
 VALUES ('aa8065b3-af14-4a57-be43-4dae9809672e', 'Professor Centro', 'teacher', 'professor.centro@email.com', 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO UPDATE SET role = 'teacher', full_name = 'Professor Centro', email = 'professor.centro@email.com', unit_id = 'a0000000-0000-0000-0000-000000000001';
@@ -87,9 +94,9 @@ VALUES
    '{"full_name":"João Oliveira","role":"parent"}'::jsonb, now(), now(), now()),
 
   ('00000000-0000-0000-0000-000000000000', 'b0000000-0000-0000-0000-000000000005',
-   'authenticated', 'authenticated', 'fernanda.lima@email.com', 'x',
+   'authenticated', 'authenticated', 'Marina.lima@email.com', 'x',
    '{"provider":"email","providers":["email"]}'::jsonb,
-   '{"full_name":"Fernanda Lima","role":"parent"}'::jsonb, now(), now(), now()),
+   '{"full_name":"Marina Lima","role":"parent"}'::jsonb, now(), now(), now()),
 
   ('00000000-0000-0000-0000-000000000000', 'b0000000-0000-0000-0000-000000000006',
    'authenticated', 'authenticated', 'roberto.alves@email.com', 'x',
@@ -97,12 +104,40 @@ VALUES
    '{"full_name":"Roberto Alves","role":"parent"}'::jsonb, now(), now(), now())
 ON CONFLICT (id) DO NOTHING;
 
+-- Inserir identidades para os pais dummy para que possam ser gerenciados via Admin API
+INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+VALUES
+  ('b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000001', 'email', 'ana.silva@email.com'), 
+   'email', 'ana.silva@email.com', now(), now(), now()),
+
+  ('b0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000002', 'email', 'pedro.santos@email.com'), 
+   'email', 'pedro.santos@email.com', now(), now(), now()),
+
+  ('b0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000003', 'email', 'mariana.costa@email.com'), 
+   'email', 'mariana.costa@email.com', now(), now(), now()),
+
+  ('b0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000004', 'email', 'joao.oliveira@email.com'), 
+   'email', 'joao.oliveira@email.com', now(), now(), now()),
+
+  ('b0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000005', 'email', 'marina.lima@email.com'), 
+   'email', 'marina.lima@email.com', now(), now(), now()),
+
+  ('b0000000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000006', 
+   jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000006', 'email', 'roberto.alves@email.com'), 
+   'email', 'roberto.alves@email.com', now(), now(), now())
+ON CONFLICT (id) DO NOTHING;
+
 -- Populate emails in profiles (since trigger only populates full_name and role)
 UPDATE public.profiles SET email = 'ana.silva@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000001';
 UPDATE public.profiles SET email = 'pedro.santos@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000002';
 UPDATE public.profiles SET email = 'mariana.costa@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000003';
 UPDATE public.profiles SET email = 'joao.oliveira@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000004';
-UPDATE public.profiles SET email = 'fernanda.lima@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000005';
+UPDATE public.profiles SET email = 'marina.lima@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000005';
 UPDATE public.profiles SET email = 'roberto.alves@email.com' WHERE id = 'b0000000-0000-0000-0000-000000000006';
 
 -- ============================================================================
@@ -117,8 +152,8 @@ VALUES
   ('c0000000-0000-0000-0000-000000000005', 'Miguel Costa',      9,  'Escola Nova Geração',            'mariana.costa@email.com', true,  'Curioso, começou robótica recentemente', 380.00, 15, 'a0000000-0000-0000-0000-000000000002'),
   ('c0000000-0000-0000-0000-000000000006', 'Laura Costa',       11, 'Escola Nova Geração',            'mariana.costa@email.com', true,  'Boa aluna, dedicada aos estudos', 380.00, 15, 'a0000000-0000-0000-0000-000000000002'),
   ('c0000000-0000-0000-0000-000000000007', 'Pedro Oliveira',    6,  'Escola Infantil Pequeno Mundo',  'joao.oliveira@email.com', true,  'O mais novo da turma, muita energia', 320.00, 20, 'a0000000-0000-0000-0000-000000000001'),
-  ('c0000000-0000-0000-0000-000000000008', 'Beatriz Lima',      13, 'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Preparação para vestibular, foco em matemática e inglês', 480.00, 10, 'a0000000-0000-0000-0000-000000000002'),
-  ('c0000000-0000-0000-0000-000000000009', 'Rafael Lima',       8,  'Colégio Anglo',                  'fernanda.lima@email.com', true,  'Hiperativo, bateria ajuda na concentration', 420.00, 10, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000008', 'Beatriz Lima',      13, 'Colégio Anglo',                  'marina.lima@email.com', true,  'Preparação para vestibular, foco em matemática e inglês', 480.00, 10, 'a0000000-0000-0000-0000-000000000002'),
+  ('c0000000-0000-0000-0000-000000000009', 'Rafael Lima',       8,  'Colégio Anglo',                  'marina.lima@email.com', true,  'Hiperativo, bateria ajuda na concentration', 420.00, 10, 'a0000000-0000-0000-0000-000000000002'),
   ('c0000000-0000-0000-0000-000000000010', 'Alice Alves',       15, 'Instituto Federal',               'roberto.alves@email.com', true,  'Quer seguir carreira em tecnologia', 500.00, 25, 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name, age = EXCLUDED.age, school = EXCLUDED.school, 

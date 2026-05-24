@@ -107,10 +107,10 @@ export async function POST(request) {
 
     const newUserId = authData.user.id;
 
-    // 2. Criar perfil correspondente na tabela profiles
+    // 2. Criar ou atualizar perfil correspondente na tabela profiles
     const { data: newProfile, error: createProfileErr } = await adminClient
       .from('profiles')
-      .insert({
+      .upsert({
         id: newUserId,
         full_name,
         role,
