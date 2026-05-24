@@ -21,6 +21,11 @@ let nextId = 0;
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const add = useCallback((type, message, duration = 5000) => {
     const id = ++nextId;
@@ -45,7 +50,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      {typeof window !== 'undefined' &&
+      {mounted && typeof window !== 'undefined' &&
         createPortal(
           <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
             {toasts.map(t => (
