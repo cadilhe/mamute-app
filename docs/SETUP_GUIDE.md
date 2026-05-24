@@ -24,7 +24,7 @@ Guia completo para configurar o ambiente de desenvolvimento e produção do zero
 
 ### 1.2 Rodar o schema
 1. No menu lateral: SQL Editor → New query
-2. Cole o conteúdo do script consolidado [NEW_DATABASE_SCHEMA.sql](file:///d:/projects/react_projects/mamute-app/docs/architecture/NEW_DATABASE_SCHEMA.sql)
+2. Cole o conteúdo da seção **SQL Completo** do arquivo [DATABASE_SCHEMA.md](file:///d:/projects/react_projects/mamute-app/docs/architecture/DATABASE_SCHEMA.md)
 3. Execute com Run (Ctrl+Enter)
 4. Verifique em Table Editor: devem aparecer as tabelas (`units`, `disciplines`, `profiles`, `students`, `modules`, `classes`, `schedules`, `progress`, `reports`, `khan_profiles`, `khan_topics`, `khan_subtopics`, `parent_student`, `payments`)
 
