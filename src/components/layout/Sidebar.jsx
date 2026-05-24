@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useConnection } from '@/hooks/useConnection';
 
 const NAV = [
   { href: '/', icon: '⬡', label: 'Dashboard' },
@@ -19,14 +20,18 @@ export function Sidebar() {
   const { profile, signOut } = useAuth();
   const { units, activeUnitId, setActiveUnitId } = useUnits();
   const pathname = usePathname();
+  const isOnline = useConnection();
 
   return (
     <aside className="w-[var(--sidebar-w)] min-h-screen bg-surface border-r border-border flex flex-col fixed top-0 left-0 z-50">
       {/* Logo */}
       <div className="p-6 border-b border-border flex flex-col gap-3">
-        <div>
-          <div className="font-bold text-lg tracking-tight text-text">MAMUTE</div>
-          <div className="text-xs text-text-3 mt-0.5">Sistema de ensino</div>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="MAMUTE Logo" className="w-8 h-8 object-contain" />
+          <div>
+            <div className="font-bold text-base tracking-tight text-text leading-none">MAMUTE</div>
+            <div className="text-[10px] text-text-3 mt-1">Sistema de ensino</div>
+          </div>
         </div>
 
         {/* Unidade do Professor / Seletor de Unidades */}
@@ -109,6 +114,14 @@ export function Sidebar() {
           </Link>
         )}
       </nav>
+
+      {/* Offline Status */}
+      {!isOnline && (
+        <div className="mx-4 mb-4 p-3 rounded-xl bg-danger/10 border border-danger/20 flex items-center gap-2.5 text-danger text-xs animate-pulse">
+          <span className="w-2.5 h-2.5 rounded-full bg-danger block" />
+          <span className="font-semibold">Você está offline</span>
+        </div>
+      )}
 
       {/* User */}
       <div className="p-4 border-t border-border flex flex-col gap-1.5">

@@ -13,6 +13,6 @@
 - [x] Editar/remover tópicos e subtópicos Khan (KhanTab)
 
 ## Longo prazo (PRD Fase 3+)
-- [ ] Financeiro: mensalidades, histórico de pagamentos
-- [ ] Multi-professor: suporte a mais de um professor por unidade
-- [ ] PWA: Progressive Web App para acesso offline
+- [x] Financeiro: mensalidades, histórico de pagamentos
+- [x] Multi-professor: suporte a mais de um professor por unidade
+- [] PWA: Progressive Web App para acesso offline

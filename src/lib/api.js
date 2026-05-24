@@ -1,4 +1,65 @@
-import { supabase } from './supabase';
+import { supabase as rawSupabase } from './supabase';
+
+const isOffline = () => typeof window !== 'undefined' && !window.navigator.onLine;
+
+const offlineError = () => ({
+  data: null,
+  error: { message: 'Você está offline. Conecte-se à internet para realizar esta operação.' }
+});
+
+const supabase = new Proxy(rawSupabase, {
+  get(target, prop) {
+    if (prop === 'from') {
+      return (tableName) => {
+        const query = target.from(tableName);
+        const originalThen = query.then;
+        query.then = function(onfulfilled, onrejected) {
+          if (isOffline()) {
+            return Promise.resolve(offlineError()).then(onfulfilled, onrejected);
+          }
+          return originalThen.apply(this, arguments);
+        };
+        return query;
+      };
+    }
+    
+    if (prop === 'auth') {
+      const auth = target.auth;
+      return new Proxy(auth, {
+        get(authTarget, authProp) {
+          if (['signInWithPassword', 'signUp', 'signOut'].includes(authProp)) {
+            return async (...args) => {
+              if (isOffline()) {
+                return offlineError();
+              }
+              return authTarget[authProp](...args);
+            };
+          }
+          return authTarget[authProp];
+        }
+      });
+    }
+
+    if (prop === 'functions') {
+      const functions = target.functions;
+      return new Proxy(functions, {
+        get(fnTarget, fnProp) {
+          if (fnProp === 'invoke') {
+            return async (...args) => {
+              if (isOffline()) {
+                return offlineError();
+              }
+              return fnTarget.invoke(...args);
+            };
+          }
+          return fnTarget[fnProp];
+        }
+      });
+    }
+
+    return target[prop];
+  }
+});
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 export const auth = {
